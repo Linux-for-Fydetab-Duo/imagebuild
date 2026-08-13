@@ -1,0 +1,12 @@
+src/
+pkg/
+grub/grub/
+grub/gnulib/
+grub-btrfs-*.tar.gz
+ap6275p-firmware/firmware
+linux-fydetab/linux-rockchip
+ckbcomp/console-setup_*.tar.*
+gnome-shell-extension-gjs-osk/gjsosk@vishram1123_main.zip
+calamares-settings/calamares-settings/
+*.tar.xz
+*.tar.gz

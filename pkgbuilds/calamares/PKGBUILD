@@ -1,0 +1,135 @@
+# Maintainer: Rustmilian Rustmilian@proton.me
+
+pkgname=('calamares')
+
+pkgver=3.3.8
+pkgrel=4
+pkgdesc='Distribution-independent installer framework'
+arch=($CARCH)
+url="https://github.com/calamares/calamares"
+
+license=('BSD-2-Clause'
+	'CC-BY-4.0'
+	'CC0-1.0'
+	'GPL-3.0-or-later'
+	'LGPL-2.1-only'
+	'LGPL-3.0-or-later'
+	'MIT')
+
+depends=('ckbcomp'
+	'efibootmgr'
+	'gtk-update-icon-cache'
+	'icu'
+	'kpmcore>=24.01.75'
+	'libpwquality'
+	'mkinitcpio-openswap'
+	'squashfs-tools'
+	'yaml-cpp'
+	'kconfig>=5.246'
+	'kcoreaddons>=5.246'
+	'ki18n>=5.246'
+	'kiconthemes>=5.246'
+	'kio>=5.246'
+	'polkit-qt6>=0.175.0'
+	'qt6-base>=6.6.0'
+	'qt6-svg>=6.6.0'
+	'solid>=5.246'
+	'qt6-tools'
+	'qt6-translations')
+
+makedepends=('extra-cmake-modules' 'git' 'qt6-tools' 'qt6-translations' 'qt6-svg' 'qt6-base' 'polkit-qt6' 'kconfig' 'kcoreaddons' 'ki18n' 'kiconthemes' 'kio' 'solid')
+
+backup=('usr/share/calamares/modules/bootloader.conf'
+	'usr/share/calamares/modules/displaymanager.conf'
+	'usr/share/calamares/modules/initcpio.conf'
+	'usr/share/calamares/modules/unpackfs.conf')
+
+source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz"
+	"calamares.desktop"
+	"calamares_polkit"
+	"49-nopasswd-calamares.rules"
+	"paru-support.patch"
+	"flag.patch")
+
+sha256sums=('523a0e4cfefbe471d9a6a5d874018fe282a4ce3667ff560bd97190339be6b592'
+            'b9e65ab87f69b2d3f8f8eaea60c78625aef57dd336314ab75389f31a447445be'
+            'c176b28007bd1c1f23d8dbb2c936fa54d0c01bacfb67290ddad597606c129df3'
+            '56d85ff6bf860b9559b8c9f997ad9b1002f3fccc782073760eca505e3bddd176'
+            'f00c90bd87d6dfd73b3ec53fa9a145ac25234676be41604807f05f05a4bf5bbb'
+            '0830c8fe57c94a63ef87b6a025eb729b4f098a9e46e729b63415f4d3a2755762')
+
+
+build() {
+	cd "${srcdir}/${pkgname}-${pkgver}" || return
+	mkdir -p build
+	cd build || return
+	cmake .. \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=lib \
+		-DWITH_QT6=ON \
+		-DWITH_PYTHONQT=OFF \
+		-DWITH_KF5DBus=OFF \
+		-DBoost_NO_BOOST_CMAKE=ON \
+		-DWEBVIEW_FORCE_WEBKIT=OFF \
+		-DSKIP_MODULES="webview \
+						tracking \
+						interactiveterminal \
+						initramfs \
+						initramfscfg \
+						dracut \
+						dracutlukscfg \
+						dummyprocess \
+						dummypython \
+						dummycpp \
+						dummypythonqt \
+						services-openrc \
+						keyboardq \
+						localeq \
+						welcomeq"
+	make
+}
+
+package() {
+	depends=('kconfig>=5.246'
+		'kcoreaddons>=5.246'
+		'ki18n>=5.246'
+		'kiconthemes>=5.246'
+		'kio>=5.246'
+		'polkit-qt6>=0.175.0'
+		'qt6-base>=6.6.0'
+		'qt6-svg>=6.6.0'
+		'solid>=5.246'
+		yaml-cpp
+		kpmcore)
+
+
+	cd "${srcdir}/${pkgname}-${pkgver}/build" || return
+	make DESTDIR="$pkgdir" install
+	# install -Dm644 "${srcdir}/calamares.desktop" "$pkgdir/etc/xdg/autostart/calamares.desktop"
+	# install -Dm755 "${srcdir}/calamares_polkit" "$pkgdir/usr/bin/calamares_polkit"
+	# install -Dm644 "${srcdir}/49-nopasswd-calamares.rules" "$pkgdir/etc/polkit-1/rules.d/49-nopasswd-calamares.rules"
+	# chmod 750 "$pkgdir"/etc/polkit-1/rules.d
+
+}
+
+package_calamares-qt5() {
+	depends=('kconfig5>=5.113.0'
+		'kcoreaddons5>=5.113.0'
+		'kiconthemes5>=5.113.0'
+		'ki18n5>=5.113.0'
+		'kio5>=5.113.0'
+		'solid5>=5.113.0'
+		'qt5-base>=5.15.11'
+		'qt5-svg>=5.15.11'
+		'polkit-qt5>=0.175.0'
+		'plasma-framework5>=5.58'
+		'qt5-xmlpatterns>=5.15.11')
+
+	cd "${srcdir}/${pkgname}-${pkgver}/build" || return
+	make DESTDIR="$pkgdir" install
+	install -Dm644 "${srcdir}/calamares.desktop" "$pkgdir/etc/xdg/autostart/calamares.desktop"
+	install -Dm755 "${srcdir}/calamares_polkit" "$pkgdir/usr/bin/calamares_polkit"
+	install -Dm644 "${srcdir}/49-nopasswd-calamares.rules" "$pkgdir/etc/polkit-1/rules.d/49-nopasswd-calamares.rules"
+	chmod 750 "$pkgdir"/etc/polkit-1/rules.d
+}
