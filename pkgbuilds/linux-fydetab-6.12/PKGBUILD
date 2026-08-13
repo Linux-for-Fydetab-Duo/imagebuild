@@ -6,7 +6,7 @@ _kernel=linux-fydetab
 pkgbase=$_kernel
 pkgname=("${pkgbase}-headers" $pkgbase)
 pkgver=6.12.43
-pkgrel=2
+pkgrel=3
 arch=('aarch64')
 license=('GPL2')
 url="https://github.com/Linux-for-Fydetab-Duo/linux-fydetabduo"
@@ -48,10 +48,19 @@ build() {
   # version file, the build itself -- must agree on it.
   make ${MAKEFLAGS} fydetabduo_defconfig
 
+  # fydetabduo_defconfig ships with CONFIG_RD_ZSTD off, but mkinitcpio (the
+  # fyde build and stock >=30 alike) compresses the initramfs with zstd by
+  # default. The kernel then silently drops the initramfs at boot
+  # ("Initramfs unpacking failed: compression method zstd not configured"),
+  # falls back to mounting root directly -- and the built-in panthor probes
+  # BEFORE root is mounted, so the GPU firmware is unreachable and the probe
+  # fails permanently. Diagnosed on hardware 2026-08-13.
+  ./scripts/config --file .config -e CONFIG_RD_ZSTD
 
 
 
   make ${MAKEFLAGS} olddefconfig
+  grep -q "^CONFIG_RD_ZSTD=y" .config || { echo "RD_ZSTD did not take"; exit 1; }
 
   make ${MAKEFLAGS} prepare
   make -s kernelrelease > version
