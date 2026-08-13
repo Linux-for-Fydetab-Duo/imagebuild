@@ -1,0 +1,109 @@
+# Packages installed into the image by stages/01-bootstrap.sh.
+# Lines starting with # are ignored.
+
+# ====
+# CORE
+# ====
+
+base
+base-devel
+networkmanager
+network-manager-applet
+nano
+lm_sensors
+archlinux-keyring
+archlinuxarm-keyring
+btrfs-progs
+bluez
+bash
+bash-completion
+sudo
+polkit
+bluez-utils
+linux-fydetab
+linux-firmware
+linux-firmware-whence
+libdrm
+lsb-release
+xf86-video-fbdev
+xorg-server
+parted
+gvfs
+pipewire-pulse
+wireplumber
+pipewire-alsa
+pipewire-jack
+fyde-keyring
+fyde-mirrorlist
+dosfstools
+e2fsprogs
+blueman
+cpupower
+less
+lshw
+ap6275p-firmware
+# gnu-netcat disappeared from the ALARM repos; openbsd-netcat is the
+# maintained replacement and provides the same `nc`.
+openbsd-netcat
+
+# ===
+# GPU  -- Mali G610 driven by the panthor kernel driver
+# ===
+# panthor (kernel, in linux-fydetab) + panfrost gallium (mesa) + panvk (vulkan-panfrost).
+# NOT used: the Rockchip vendor mali_kbase blob driver, libmali, or mesa-panfork-git
+# -- panfork was the pre-panthor stopgap and is obsolete here.
+#
+# The CSF firmware comes from linux-firmware-other (pulled in by linux-firmware),
+# which since 2026 ships arm/mali/arch10.8/mali_csffw.bin (a symlink to
+# ../arch10.10/, one blob for arch 10.8/10.10/10.12) -- verified: CSF magic OK,
+# header 0.3, version_hash 0x01050000, newer than the rkr4 blob. Our
+# mali-G610-firmware-rkr4 package installs the SAME path and pacstrap fails on
+# the file conflict, so it stays in the repo as a fallback but out of the image.
+mesa
+vulkan-panfrost
+
+# ===
+# GUI
+# ===
+gdm
+fydeos-wallpapers
+gnome-calculator
+gnome-calendar
+gnome-characters
+gnome-clocks
+gnome-color-manager
+gnome-connections
+gnome-console
+gnome-contacts
+gnome-control-center
+gnome-disk-utility
+gnome-font-viewer
+gnome-getting-started-docs
+gnome-keyring
+gnome-logs
+gnome-menus
+gnome-music
+gnome-remote-desktop
+gnome-session
+gnome-settings-daemon
+gnome-shell
+gnome-shell-extensions
+gnome-system-monitor
+gnome-text-editor
+gnome-themes-extra
+gnome-user-docs
+gnome-weather
+gnome-tweaks
+geary
+gnome-notes
+seahorse
+vlc
+noto-fonts-cjk
+gnome-applets
+gnome-latex
+gnome-panel
+gnome-passwordsafe
+gnome-shell-extension-appindicator
+fydetabduo-post-install
+
+calamares-settings-fydetab
