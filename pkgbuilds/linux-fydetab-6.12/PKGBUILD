@@ -6,7 +6,7 @@ _kernel=linux-fydetab
 pkgbase=$_kernel
 pkgname=("${pkgbase}-headers" $pkgbase)
 pkgver=6.12.43
-pkgrel=5
+pkgrel=11
 arch=('aarch64')
 license=('GPL2')
 url="https://github.com/Linux-for-Fydetab-Duo/linux-fydetabduo"
@@ -55,8 +55,6 @@ build() {
   # falls back to mounting root directly -- and the built-in panthor probes
   # BEFORE root is mounted, so the GPU firmware is unreachable and the probe
   # fails permanently. Diagnosed on hardware 2026-08-13.
-  ./scripts/config --file .config -e CONFIG_RD_ZSTD
-
   # LoadPin (a ChromeOS LSM) pins module AND firmware loading to the first
   # filesystem the kernel reads a file from. On ChromeOS that is the verity
   # rootfs and it is a sane hardening choice. On this image it is fatal in a
@@ -66,8 +64,6 @@ build() {
   # touchscreen, no wifi, no bluetooth, empty lsmod. Diagnosed on hardware
   # 2026-08-13. An Arch system loads modules from the root filesystem by
   # design, so LoadPin cannot be enforced here at all.
-  ./scripts/config --file .config -d CONFIG_SECURITY_LOADPIN
-
   # Third ChromeOS-ism: the defconfig disables the VT layer (ChromeOS uses
   # frecon and never switches consoles). GDM starts user sessions on a NEW VT;
   # with CONFIG_VT=n the handoff after a successful password blocks forever --
@@ -75,15 +71,27 @@ build() {
   # logs. Both the old working 6.1 config and FydeOS's own r150 kernel carry
   # VT=y; only this defconfig lacks it. Also gives back text consoles
   # (console=tty1) for on-device debugging. Diagnosed on hardware 2026-08-13.
-  ./scripts/config --file .config \
-      -e CONFIG_VT -e CONFIG_VT_CONSOLE \
-      -e CONFIG_FRAMEBUFFER_CONSOLE -e CONFIG_FRAMEBUFFER_CONSOLE_ROTATION
-
+  # ...but do NOT let the kernel VT-switch around suspend: with the slow VOP2
+  # power-domain recovery on this board the switch-back lags for tens of
+  # seconds and every resume detours through a visible kernel console.
+  # Suspend diagnostics still reach the serial console. VT_CONSOLE_SLEEP is
+  # a promptless `def_bool y` (olddefconfig re-forces it whenever
+  # VT_CONSOLE && PM_SLEEP hold), so scripts/config -d cannot stick -- the
+  # Kconfig default itself must be flipped.
+  # The defconfig arms the DPM watchdog (a ChromeOS panic-and-report debug
+  # feature): any device suspend/resume callback slower than 30s panics the
+  # kernel. This board's vop2_wait_power_domain_off routinely takes ~24s on
+  # display disable (pd0 never powers off, vendor VOP2/power-domain defect)
+  # and sometimes exceeds 30s -- the machine then dies mid-suspend and needs
+  # a forced power-off. Diagnosed on hardware 2026-08-13. A consumer image
+  # must ride out slow PM callbacks, not panic on them.
   make ${MAKEFLAGS} olddefconfig
   grep -q "^CONFIG_RD_ZSTD=y" .config || { echo "RD_ZSTD did not take"; exit 1; }
   grep -q "^CONFIG_SECURITY_LOADPIN=y" .config && { echo "LOADPIN still enabled"; exit 1; }
   grep -q "^CONFIG_VT=y" .config || { echo "VT did not take"; exit 1; }
   grep -q "^CONFIG_FRAMEBUFFER_CONSOLE=y" .config || { echo "fbcon did not take"; exit 1; }
+  grep -q "^CONFIG_VT_CONSOLE_SLEEP=y" .config && { echo "VT_CONSOLE_SLEEP still on"; exit 1; }
+  grep -q "^CONFIG_DPM_WATCHDOG=y" .config && { echo "DPM_WATCHDOG still on"; exit 1; }
 
   make ${MAKEFLAGS} prepare
   make -s kernelrelease > version
