@@ -6,7 +6,7 @@ _kernel=linux-fydetab
 pkgbase=$_kernel
 pkgname=("${pkgbase}-headers" $pkgbase)
 pkgver=6.12.43
-pkgrel=3
+pkgrel=4
 arch=('aarch64')
 license=('GPL2')
 url="https://github.com/Linux-for-Fydetab-Duo/linux-fydetabduo"
@@ -57,10 +57,21 @@ build() {
   # fails permanently. Diagnosed on hardware 2026-08-13.
   ./scripts/config --file .config -e CONFIG_RD_ZSTD
 
+  # LoadPin (a ChromeOS LSM) pins module AND firmware loading to the first
+  # filesystem the kernel reads a file from. On ChromeOS that is the verity
+  # rootfs and it is a sane hardening choice. On this image it is fatal in a
+  # subtle, boot-order-dependent way: with a working initramfs the pin lands on
+  # the INITRAMFS, and after switch-root every module load from the real root
+  # is denied ("LoadPin: kernel-module denied", modprobe gets EPERM) -- no
+  # touchscreen, no wifi, no bluetooth, empty lsmod. Diagnosed on hardware
+  # 2026-08-13. An Arch system loads modules from the root filesystem by
+  # design, so LoadPin cannot be enforced here at all.
+  ./scripts/config --file .config -d CONFIG_SECURITY_LOADPIN
 
 
   make ${MAKEFLAGS} olddefconfig
   grep -q "^CONFIG_RD_ZSTD=y" .config || { echo "RD_ZSTD did not take"; exit 1; }
+  grep -q "^CONFIG_SECURITY_LOADPIN=y" .config && { echo "LOADPIN still enabled"; exit 1; }
 
   make ${MAKEFLAGS} prepare
   make -s kernelrelease > version
