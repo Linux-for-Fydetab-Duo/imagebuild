@@ -44,7 +44,7 @@ package() {
     install -Dm644 "${srcdir}/99-fydetab.conf" "${pkgdir}/usr/lib/environment.d/99-fydetab.conf"
     install -Dm644 "${srcdir}/50-enable-screen-rotate.conf" "${pkgdir}/etc/systemd/system/iio-sensor-proxy.service.d/50-enable-screen-rotate.conf"
     install -Dm644 "${srcdir}/fydetabduo.service" "${pkgdir}/usr/lib/systemd/system/fydetabduo.service"
-    install -Dm644 "${srcdir}/50-suspend-state.conf" "${pkgdir}/usr/lib/systemd/system/sleep.conf.d"
+    install -Dm644 "${srcdir}/50-suspend-state.conf" "${pkgdir}/usr/lib/systemd/sleep.conf.d/50-suspend-state.conf"
     install -Dm755 "${srcdir}/brcm_patchram_plus" "${pkgdir}/usr/bin/brcm_patchram_plus"
     install -Dm755 "${srcdir}/bluetooth-fix" "${pkgdir}/usr/bin/bluetooth-fix"
     install -Dm644 "${srcdir}/bluetooth-fydetab.service" "${pkgdir}/usr/lib/systemd/system/bluetooth-fydetab.service"
