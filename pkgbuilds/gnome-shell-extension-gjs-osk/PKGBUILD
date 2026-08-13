@@ -1,6 +1,6 @@
 # Maintainer: Panda <panda@fydeos.io
 pkgname=gnome-shell-extension-gjs-osk
-pkgver=fab8e97
+pkgver=f2b8f31
 pkgrel=1
 pkgdesc="An on-screen keyboard for GNOME Shell written in GJS"
 arch=('any')
@@ -8,8 +8,8 @@ url="https://github.com/Vishram1123/gjs-osk"
 license=('Unknown')
 depends=('gjs' 'gnome-shell' 'gnome-settings-daemon')
 makedepends=('unzip')
-source=("https://github.com/Vishram1123/gjs-osk/releases/download/fab8e97/gjsosk@vishram1123_main.zip")
-sha256sums=('d28e01ab63e15244164cbb8d86c0fe940b82ccdd69eeb2c155491dd40cb6797a')
+source=("https://github.com/Vishram1123/gjs-osk/releases/download/${pkgver}/gjsosk@vishram1123_main.zip")
+sha256sums=('cb6d7c6bbf995bffb15cfc6cfbc5e6d8439c43c8ee9e90c9b582d2410caf1157')
 
 package() {
     cd "$srcdir"
