@@ -2,7 +2,7 @@
 
 pkgname=fydetabduo-post-install
 pkgver=20$(date +%y%m%d)
-pkgrel=1
+pkgrel=5
 pkgdesc="Fixes for FydeTab Duo"
 arch=('any')
 url="https://fydetabduo.com/"
@@ -23,11 +23,11 @@ source=('fydetabduo.service'
         '90-fydetab.hwdb'
         '99-fydetab.conf'
         'https://github.com/openFyde/overlay-fydetab_duo-openfyde/raw/r120-dev/chromeos-base/chromeos-bsp-fydetab_duo-openfyde/files/firmware/Himax_firmware.bin')
-sha256sums=('eb9e0e949c022779c21cfd46c465b7bcb9ad955b7d4136393b09bfb311015f3c'
+sha256sums=('e374e25d9ccbb02ee91c60cd12232e5f6410552116b3a9d66659a803ade6a412'
             '18f5dbc2275ebfbfac69332948c9775cacaea44d35fc1788eae457ce3cebcb19'
             'fe060a0f6de5b75326de1eec9f9ea322aa4a954c6e6b66cea0d224d6928f93eb'
             '5eff8eb75f3c32d27dc623ec68271b56905f5483b11bd39dc878c75e83369ceb'
-            'f12f21362329a42487f0627c2f2491b12cbba9695322ebb42e20661cf3eefa7a'
+            '18a4fc47849c47de9f2622416c3541a27ea481ffafebab1153d328097b3a6197'
             '83f7c45531645efa6c9d9cade152e80620c1864608ad3349917b3998978fb238'
             '7d9d718a665ca2c64361bbde124c8c9dab0b5a97227da67908acfb40ab6a2994'
             '1666b032d91325bb747fc260990022bdeee5c7ac34b68cb69da7eee7c16dae83'
