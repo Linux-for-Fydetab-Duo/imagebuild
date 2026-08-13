@@ -6,13 +6,17 @@ _kernel=linux-fydetab
 pkgbase=$_kernel
 pkgname=("${pkgbase}-headers" $pkgbase)
 pkgver=6.12.43
-pkgrel=1
+pkgrel=2
 arch=('aarch64')
 license=('GPL2')
 url="https://github.com/Linux-for-Fydetab-Duo/linux-fydetabduo"
 pkgdesc="The Linux Kernel and modules"
 # optdepends=('mali-G610-firmware-rkr4: Mali G610 firmware for Rockchip RK3588')
-makedepends=('xmlto' 'docbook-xsl' 'kmod' 'inetutils' 'bc' 'git' 'uboot-tools' 'vboot-utils' 'dtc')
+# vboot-utils dropped from upstream's makedepends: nothing in this PKGBUILD
+# invokes futility/vbutil (it is a leftover from ChromeOS kernel-partition
+# packaging), and the package does not exist in x86_64 repos, which would make
+# cross-building impossible for a tool that is never run.
+makedepends=('xmlto' 'docbook-xsl' 'kmod' 'inetutils' 'bc' 'git' 'uboot-tools' 'dtc')
 options=('!strip' 'ccache')
 source=(git+https://github.com/Linux-for-Fydetab-Duo/linux-fydetabduo.git#branch=linux-v6.12
         'linux.preset')
@@ -25,15 +29,34 @@ prepare() {
 build() {
   cd linux-fydetabduo
 
-  echo > .scmversion
-  echo > localversion
+  # Keep the kernel release string stable across every make invocation.
+  # LOCALVERSION set-but-empty tells scripts/setlocalversion to append
+  # nothing -- neither the '+' for a dirty tree (this PKGBUILD dirties the
+  # tree by sedding the Makefile) nor a -g<hash>-dirty suffix. The old
+  # 'echo > .scmversion' trick stopped working before 6.x: setlocalversion
+  # no longer reads that file. Upstream's ordering also computed the
+  # 'version' file under `make olddefconfig` -- the DEFAULT config, where
+  # LOCALVERSION_AUTO=y -- while building under fydetabduo_defconfig, so
+  # package() installed vmlinuz under one release string and the modules
+  # under another, and the image could not find its own module tree.
+  export LOCALVERSION=
+
   sed -i 's|-std=gnu89|-std=gnu89 -Wno-array-compare -Wno-dangling-pointer -Wno-stringop-overread -Wno-misleading-indentation -Wno-address -Wno-unused-function|g' Makefile
-  make olddefconfig prepare
   sed -i 's|^EXTRAVERSION =.*|EXTRAVERSION = -fydetabduo|g' Makefile
+
+  # Configure with the real config FIRST; everything after -- prepare, the
+  # version file, the build itself -- must agree on it.
+  make ${MAKEFLAGS} fydetabduo_defconfig
+
+
+
+
+  make ${MAKEFLAGS} olddefconfig
+
+  make ${MAKEFLAGS} prepare
   make -s kernelrelease > version
   unset LDFLAGS
 
-  make ${MAKEFLAGS} fydetabduo_defconfig
   make ${MAKEFLAGS} Image modules
   make ${MAKEFLAGS} DTC_FLAGS="-@" dtbs
 }
@@ -46,6 +69,10 @@ _package() {
   backup=("etc/mkinitcpio.d/${_kernel}.preset")
 
   cd linux-fydetabduo
+
+  # Same reasoning as in build(): the install targets below re-run
+  # setlocalversion, and must produce the same release string.
+  export LOCALVERSION=
 
   local _version="$(<version)"
 
@@ -76,6 +103,7 @@ _package-headers() {
   provides=("linux-headers=${pkgver}")
 
   cd linux-fydetabduo
+  export LOCALVERSION=
   local _version="$(<version)"
   local builddir="$pkgdir/usr/lib/modules/$_version/build"
 
