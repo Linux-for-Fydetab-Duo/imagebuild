@@ -22,7 +22,11 @@ depends=('ckbcomp'
 	'icu'
 	'kpmcore>=24.01.75'
 	'libpwquality'
-	'mkinitcpio-openswap'
+	# mkinitcpio-openswap dropped: AUR-only (no ALARM repo carries it), so the
+	# dependency is unsatisfiable in a clean repo chain -- and it only exists
+	# to unlock encrypted swap from the initramfs, which this image never
+	# configures. The published calamares 3.3.8-3 resolved fine, so it cannot
+	# have carried this dependency either.
 	'squashfs-tools'
 	'yaml-cpp'
 	'kconfig>=5.246'
