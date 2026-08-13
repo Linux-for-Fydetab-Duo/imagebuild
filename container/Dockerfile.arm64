@@ -1,0 +1,47 @@
+# aarch64 build container, run under qemu binfmt on an x86_64 host.
+# Used ONLY for packages that compile target code and cannot cross-compile --
+# currently calamares and mutter (see pkg/BUILDMODES).
+#
+# The base comes from the official Arch Linux ARM rootfs tarball, imported by
+# container/mk-alarm-base.sh, rather than a third-party image.
+FROM fydetab-build:alarm-base
+
+# The ALARM rootfs ships /etc/resolv.conf as a symlink to
+# /run/systemd/resolve/resolv.conf. In a container image that symlink dangles,
+# and runc cannot create a mountpoint there for its own resolv.conf -- every
+# container then dies before its first instruction with
+#   make mountpoint "/etc/resolv.conf": file exists
+# which reads like a permissions problem and is not one.
+#
+# This has to be COPY, not RUN: COPY is a filesystem-layer operation, so it
+# works on an image whose containers cannot start. The content is irrelevant --
+# the runtime bind-mounts over it -- only the file's regular-ness matters.
+COPY resolv.conf /etc/resolv.conf
+
+# The ALARM tarball ships an empty keyring. The build container installs
+# dependencies from the same mirrors the image uses and verifies nothing, which
+# matches the image build's SigLevel; do not copy this posture into the image.
+# pacman 7 downloads inside a sandbox: it drops to DownloadUser and applies
+# Landlock (filesystem) and seccomp (syscall) restrictions. Under qemu-user none
+# of that is available, and pacman treats it as fatal:
+#   error: restricting filesystem access failed because Landlock is not supported
+#   error: switching to sandbox user 'alpm' failed!
+#   error: failed to synchronize all databases
+# This is a property of emulation, not of the image, so it is disabled only here
+# in the build container -- never in the shipped rootfs, where the sandbox works
+# and is wanted.
+RUN sed -i \
+        -e 's/^DownloadUser/#DownloadUser/' \
+        -e 's/^#DisableSandboxFilesystem/DisableSandboxFilesystem/' \
+        -e 's/^#DisableSandboxSyscalls/DisableSandboxSyscalls/' \
+        /etc/pacman.conf \
+    && pacman-key --init \
+    && pacman-key --populate archlinuxarm \
+    && pacman -Syu --noconfirm --needed base-devel git \
+    && pacman -Scc --noconfirm
+
+# The ALARM tarball already has an 'alarm' user (uid 1000); makepkg runs as it.
+RUN echo 'alarm ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/alarm \
+    && chmod 440 /etc/sudoers.d/alarm
+
+WORKDIR /work

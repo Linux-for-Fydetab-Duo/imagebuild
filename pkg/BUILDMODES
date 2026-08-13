@@ -1,0 +1,36 @@
+# Where each PKGBUILD in ../pkgbuilds gets built.  Format:  <dir> <mode>
+# Read by pkg/build-pkg.sh. Unlisted directories are an error, so adding a new
+# PKGBUILD forces a deliberate choice here.
+#
+#   cross     x86_64 host toolchain, ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-.
+#             Only for build systems that genuinely support cross-compiling.
+#   emulated  makepkg inside an Arch Linux ARM aarch64 container under qemu
+#             binfmt. Correct for anything that compiles target code but cannot
+#             cross-compile. Slow -- reserve it for packages that need it.
+#   noarch    makepkg on x86_64 with CARCH=aarch64 --ignorearch. Safe only when
+#             the package compiles nothing and package() just installs files.
+#   skip      not built.
+
+# Kernel. build() is plain `make Image modules dtbs` and every packaging step is
+# a host-side file operation, so the kernel Makefile's own cross support is
+# enough -- the PKGBUILD needs no edits, only ARCH/CROSS_COMPILE in the env.
+linux-fydetab-6.12             cross
+
+# Compiled target code, no usable cross path (Qt/CMake and meson/glib).
+calamares                      emulated
+mutter                         emulated
+
+# File-installers: firmware blobs, scripts, configs, extensions. Nothing is
+# compiled, so the build host's architecture cannot leak into the result.
+ap6275p-firmware               noarch
+mali-G610-firmware-rkr4        noarch
+ckbcomp                        noarch
+calamares-settings             noarch
+fydetabduo-post-install        noarch
+gnome-shell-extension-gjs-osk  noarch
+
+# Superseded by linux-fydetab-6.12 (same pkgbase, older version).
+linux-fydetab                  skip
+# No UEFI in this image, and nothing in packages.list pulls them in.
+grub                           skip
+grub-btrfs                     skip

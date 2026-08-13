@@ -1,0 +1,40 @@
+# x86_64 build container. Does everything that is not target-native compilation:
+# pacstrap into the target rootfs, the emulated chroot hooks, cross-building the
+# kernel, assembling and compressing the image, and maintaining ./repo.
+#
+# The host must have qemu-aarch64 registered in binfmt_misc with the F flag, so
+# aarch64 binaries run inside the target chroot without qemu being copied in.
+# build.sh checks that before starting anything.
+FROM archlinux:base
+
+RUN pacman -Sy --noconfirm --needed \
+        arch-install-scripts \
+        pacman-contrib \
+        e2fsprogs \
+        gptfdisk \
+        parted \
+        uboot-tools \
+        aarch64-linux-gnu-gcc \
+        aarch64-linux-gnu-binutils \
+        bc \
+        ccache \
+        cpio \
+        docbook-xsl \
+        dtc \
+        git \
+        inetutils \
+        kmod \
+        xmlto \
+        rsync \
+        xz \
+        zstd \
+        base-devel \
+    && pacman -Scc --noconfirm
+
+# makepkg refuses to run as root. Packages are built as this user; the
+# entrypoint scripts use it via runuser where needed.
+RUN useradd -m -u 1000 -s /bin/bash builder \
+    && echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder \
+    && chmod 440 /etc/sudoers.d/builder
+
+WORKDIR /work
