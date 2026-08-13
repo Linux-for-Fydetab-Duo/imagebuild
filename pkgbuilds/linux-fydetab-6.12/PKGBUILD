@@ -6,7 +6,7 @@ _kernel=linux-fydetab
 pkgbase=$_kernel
 pkgname=("${pkgbase}-headers" $pkgbase)
 pkgver=6.12.43
-pkgrel=4
+pkgrel=5
 arch=('aarch64')
 license=('GPL2')
 url="https://github.com/Linux-for-Fydetab-Duo/linux-fydetabduo"
@@ -68,10 +68,22 @@ build() {
   # design, so LoadPin cannot be enforced here at all.
   ./scripts/config --file .config -d CONFIG_SECURITY_LOADPIN
 
+  # Third ChromeOS-ism: the defconfig disables the VT layer (ChromeOS uses
+  # frecon and never switches consoles). GDM starts user sessions on a NEW VT;
+  # with CONFIG_VT=n the handoff after a successful password blocks forever --
+  # greeter frozen with a stuck cursor, session never spawned, nothing in the
+  # logs. Both the old working 6.1 config and FydeOS's own r150 kernel carry
+  # VT=y; only this defconfig lacks it. Also gives back text consoles
+  # (console=tty1) for on-device debugging. Diagnosed on hardware 2026-08-13.
+  ./scripts/config --file .config \
+      -e CONFIG_VT -e CONFIG_VT_CONSOLE \
+      -e CONFIG_FRAMEBUFFER_CONSOLE -e CONFIG_FRAMEBUFFER_CONSOLE_ROTATION
 
   make ${MAKEFLAGS} olddefconfig
   grep -q "^CONFIG_RD_ZSTD=y" .config || { echo "RD_ZSTD did not take"; exit 1; }
   grep -q "^CONFIG_SECURITY_LOADPIN=y" .config && { echo "LOADPIN still enabled"; exit 1; }
+  grep -q "^CONFIG_VT=y" .config || { echo "VT did not take"; exit 1; }
+  grep -q "^CONFIG_FRAMEBUFFER_CONSOLE=y" .config || { echo "fbcon did not take"; exit 1; }
 
   make ${MAKEFLAGS} prepare
   make -s kernelrelease > version
