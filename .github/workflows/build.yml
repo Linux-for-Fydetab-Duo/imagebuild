@@ -123,7 +123,17 @@ jobs:
         run: |
           prerelease=""
           case "$GITHUB_REF_NAME" in stag-*) prerelease="--prerelease" ;; esac
-          gh release create "$GITHUB_REF_NAME" $prerelease \
-            --title "$GITHUB_REF_NAME" \
-            --generate-notes \
-            out/*.img.xz
+          # Idempotent for re-pushed tags: reuse the release if it exists
+          # and replace its image assets.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            for f in out/*.img.xz; do
+              gh release delete-asset "$GITHUB_REF_NAME" "$(basename "$f")" -y \
+                2>/dev/null || true
+            done
+            gh release upload "$GITHUB_REF_NAME" out/*.img.xz
+          else
+            gh release create "$GITHUB_REF_NAME" $prerelease \
+              --title "$GITHUB_REF_NAME" \
+              --generate-notes \
+              out/*.img.xz
+          fi
