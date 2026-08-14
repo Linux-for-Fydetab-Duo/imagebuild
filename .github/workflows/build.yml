@@ -98,9 +98,14 @@ jobs:
           cd repo/fyde/aarch64
           # gh uploads symlink targets under the link's name, so fyde.db /
           # fyde.files arrive as the plain files pacman expects.
-          gh release upload repo --clobber \
-            fyde.db fyde.files fyde.db.tar.gz fyde.files.tar.gz \
-            *.pkg.tar.zst
+          # Not --clobber: it 404s on stale asset ids. Delete by name
+          # (tolerating absence) and upload fresh instead.
+          files=(fyde.db fyde.files fyde.db.tar.gz fyde.files.tar.gz
+                 *.pkg.tar.zst)
+          for f in "${files[@]}"; do
+            gh release delete-asset repo "$f" -y 2>/dev/null || true
+          done
+          gh release upload repo "${files[@]}"
 
       - name: Upload image artifact
         if: "!startsWith(github.ref, 'refs/tags/')"
