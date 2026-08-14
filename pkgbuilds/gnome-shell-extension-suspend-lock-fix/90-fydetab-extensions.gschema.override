@@ -1,0 +1,5 @@
+# Default-enabled GNOME Shell extensions for the Fydetab Duo image.
+# A schema override only changes the DEFAULT: a user who later toggles
+# extensions writes a dconf value that takes precedence, as expected.
+[org.gnome.shell]
+enabled-extensions=['suspend-lock-fix@fydeos.io']
