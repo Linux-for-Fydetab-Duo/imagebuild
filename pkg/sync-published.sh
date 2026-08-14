@@ -63,6 +63,22 @@ is_local() {
     return 1
 }
 
+# Published packages this image must NOT mirror:
+#   grub, grub-btrfs     no UEFI here (u-boot + boot.scr boots the image);
+#                        grub's epoch also breaks the CI rolling release,
+#                        since GitHub sanitizes ':' in asset names.
+#   mesa-panfork-git     pre-panthor stopgap, superseded by mesa/panvk.
+#   python-imageforge    tool of the old imageforge flow this replaced.
+dropped=(grub grub-btrfs mesa-panfork-git python-imageforge)
+
+is_dropped() {
+    local candidate="$1" n
+    for n in "${dropped[@]}"; do
+        [ "$candidate" = "$n" ] && return 0
+    done
+    return 1
+}
+
 echo "==> locally built, will not sync: ${locally_built[*]}"
 
 # Entry dirs in the db are <pkgname>-<pkgver>-<pkgrel>; %FILENAME% inside each
@@ -80,6 +96,11 @@ for entry in "$tmp"/*/; do
 
     if is_local "$name"; then
         echo "    skip  $name (built locally)"
+        skipped=$((skipped + 1))
+        continue
+    fi
+    if is_dropped "$name"; then
+        echo "    drop  $name (obsolete for this image)"
         skipped=$((skipped + 1))
         continue
     fi
