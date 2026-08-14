@@ -60,10 +60,40 @@ EOF
     fi
 }
 
+# Expected package filenames for a PKGBUILD, computed on the host: makepkg
+# only exists inside the containers, but the version fields are plain bash.
+# Dynamic pkgver() PKGBUILDs would report the pre-update pkgver here; none of
+# the built packages uses one (mesa-panfork is synced, not built).
+expected_pkgs() {
+    local src="$1"
+    (cd "$src" && bash -c '
+        set +u; source ./PKGBUILD >/dev/null 2>&1
+        a="aarch64"; [ "$arch" = any ] && a=any
+        for p in "${pkgname[@]}"; do
+            printf "%s-%s%s-%s-%s.pkg.tar.zst\n" \
+                "$p" "${epoch:+$epoch:}" "$pkgver" "$pkgrel" "$a"
+        done')
+}
+
 build_one() {
     local name="$1" mode="$2"
     local src="$PKGBUILDS/$name"
     [ -d "$src" ] || { echo "!! no such PKGBUILD dir: $name" >&2; return 1; }
+
+    # Skip when every output file already sits in ./repo at this version:
+    # makepkg refuses to overwrite an existing package (exit 13), which under
+    # set -e would abort the whole run -- and CI relies on this skip for
+    # incremental builds against the seeded repo.
+    if [ -z "${FORCE:-}" ]; then
+        local missing=0 f
+        while IFS= read -r f; do
+            [ -e "$REPODIR/$f" ] || { missing=1; break; }
+        done < <(expected_pkgs "$src")
+        if [ "$missing" -eq 0 ]; then
+            echo "==> $name is up to date in ./repo, skipping (FORCE=1 to rebuild)"
+            return 0
+        fi
+    fi
 
     local work="$CACHE/pkgbuild-work/$name"
     rm -rf "$work"; mkdir -p "$work"
