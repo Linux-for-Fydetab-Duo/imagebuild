@@ -2,7 +2,7 @@
 
 pkgname=fydetabduo-post-install
 pkgver=20$(date +%y%m%d)
-pkgrel=5
+pkgrel=6
 pkgdesc="Fixes for FydeTab Duo"
 arch=('any')
 url="https://fydetabduo.com/"
@@ -15,6 +15,8 @@ source=('fydetabduo.service'
         'settings.conf'
         'fix-display.service'
         '50-suspend-state.conf'
+        '60-fydetab-wake-screen'
+        'fydetab-user-activity'
         '50-enable-screen-rotate.conf'
         'brcm_patchram_plus'
         'bluetooth-fix'
@@ -28,6 +30,8 @@ sha256sums=('e374e25d9ccbb02ee91c60cd12232e5f6410552116b3a9d66659a803ade6a412'
             'fe060a0f6de5b75326de1eec9f9ea322aa4a954c6e6b66cea0d224d6928f93eb'
             '5eff8eb75f3c32d27dc623ec68271b56905f5483b11bd39dc878c75e83369ceb'
             '18a4fc47849c47de9f2622416c3541a27ea481ffafebab1153d328097b3a6197'
+            '3ab05a526ba1a2e645ec4ff75dbdcec8d2c8818f0224c5e1bc5f2b502016ac5f'
+            '6a8aba353cb58f60633153008a9e586ff115e036c8b2364e55a8b7fb7c21e0ff'
             '83f7c45531645efa6c9d9cade152e80620c1864608ad3349917b3998978fb238'
             '7d9d718a665ca2c64361bbde124c8c9dab0b5a97227da67908acfb40ab6a2994'
             '1666b032d91325bb747fc260990022bdeee5c7ac34b68cb69da7eee7c16dae83'
@@ -45,6 +49,8 @@ package() {
     install -Dm644 "${srcdir}/50-enable-screen-rotate.conf" "${pkgdir}/etc/systemd/system/iio-sensor-proxy.service.d/50-enable-screen-rotate.conf"
     install -Dm644 "${srcdir}/fydetabduo.service" "${pkgdir}/usr/lib/systemd/system/fydetabduo.service"
     install -Dm644 "${srcdir}/50-suspend-state.conf" "${pkgdir}/usr/lib/systemd/sleep.conf.d/50-suspend-state.conf"
+    install -Dm755 "${srcdir}/60-fydetab-wake-screen" "${pkgdir}/usr/lib/systemd/system-sleep/60-fydetab-wake-screen"
+    install -Dm755 "${srcdir}/fydetab-user-activity" "${pkgdir}/usr/bin/fydetab-user-activity"
     install -Dm755 "${srcdir}/brcm_patchram_plus" "${pkgdir}/usr/bin/brcm_patchram_plus"
     install -Dm755 "${srcdir}/bluetooth-fix" "${pkgdir}/usr/bin/bluetooth-fix"
     install -Dm644 "${srcdir}/bluetooth-fydetab.service" "${pkgdir}/usr/lib/systemd/system/bluetooth-fydetab.service"

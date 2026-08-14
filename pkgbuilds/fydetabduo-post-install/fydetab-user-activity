@@ -1,0 +1,42 @@
+#!/usr/bin/python3
+# Inject one harmless key event (KEY_UNKNOWN press+release) through
+# /dev/uinput so the compositor sees real user activity: resets the idle
+# clock, lights the panel, exactly as a physical key would. Needed after
+# a power-key wake because the rk805-pwrkey driver deliberately swallows
+# the wake press (so gsd's power-button action cannot re-suspend), which
+# also means the session never learns the user is present.
+import fcntl
+import os
+import struct
+import time
+
+UI_SET_EVBIT = 0x40045564
+UI_SET_KEYBIT = 0x40045565
+UI_DEV_CREATE = 0x5501
+UI_DEV_DESTROY = 0x5502
+EV_KEY = 0x01
+EV_SYN = 0x00
+KEY_UNKNOWN = 240
+
+os.system("/usr/bin/modprobe uinput")
+fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK)
+fcntl.ioctl(fd, UI_SET_EVBIT, EV_KEY)
+fcntl.ioctl(fd, UI_SET_KEYBIT, KEY_UNKNOWN)
+setup = struct.pack("80sHHHHi", b"fydetab-wake-activity", 0x06, 0, 0, 0, 0)
+setup += b"\x00" * (4 * 64 * 4)
+os.write(fd, setup)
+fcntl.ioctl(fd, UI_DEV_CREATE)
+time.sleep(0.5)
+
+
+def emit(etype, code, value):
+    os.write(fd, struct.pack("llHHi", 0, 0, etype, code, value))
+
+
+emit(EV_KEY, KEY_UNKNOWN, 1)
+emit(EV_SYN, 0, 0)
+emit(EV_KEY, KEY_UNKNOWN, 0)
+emit(EV_SYN, 0, 0)
+time.sleep(0.3)
+fcntl.ioctl(fd, UI_DEV_DESTROY)
+os.close(fd)

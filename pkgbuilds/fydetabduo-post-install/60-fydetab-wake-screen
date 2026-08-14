@@ -1,0 +1,31 @@
+#!/bin/sh
+# After a power-key wake the session shows a lit screen for a moment and
+# then re-blanks: the rk805-pwrkey driver deliberately swallows the wake
+# press (so gsd's power-button action cannot re-suspend the machine),
+# which also means GNOME never sees user activity -- it restores its
+# screen-off state, and the touchscreen sleeps with the panel, so the
+# device feels suspended while actually awake. Detect power-key wakes by
+# diffing the pwrkey wakeup-source event_count across suspend and inject
+# one synthetic key event (fydetab-user-activity, /dev/uinput) so the
+# compositor treats the wake as real user presence. WLAN/RTC wakes leave
+# the counter untouched and the screen correctly stays dark. Wakeup node
+# names vary per boot -- always glob.
+STATE=/run/fydetab-pwrkey-count
+
+count() {
+    cat /sys/bus/platform/devices/rk805-pwrkey.*/wakeup/wakeup*/event_count 2>/dev/null | head -n1
+}
+
+case "$1" in
+    pre)
+        count > "$STATE"
+        ;;
+    post)
+        [ -r "$STATE" ] || exit 0
+        old=$(cat "$STATE")
+        new=$(count)
+        [ -n "$new" ] && [ "$new" != "$old" ] || exit 0
+        ( sleep 1.5; /usr/bin/fydetab-user-activity ) >/dev/null 2>&1 &
+        ;;
+esac
+exit 0
