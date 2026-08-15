@@ -28,7 +28,6 @@ ckbcomp                        noarch
 calamares-settings             noarch
 fydetabduo-post-install        noarch
 gnome-shell-extension-gjs-osk  noarch
-gnome-shell-extension-suspend-lock-fix noarch
 
 # Superseded by linux-fydetab-6.12 (same pkgbase, older version).
 linux-fydetab                  skip

@@ -1,8 +1,0 @@
-{
-  "uuid": "suspend-lock-fix@fydeos.io",
-  "name": "Suspend Lock Fix",
-  "description": "Lock the screen without animation so the suspend delay inhibitor is released synchronously. Works around the race where the shield's animated lock cannot finish before suspend (gsd blanks the panel, starving the animation of frames; logind's 5s inhibitor cap then expires) and its deferred ActiveChanged(true) fires seconds after resume, making gsd-power blank the freshly woken screen.",
-  "shell-version": ["50"],
-  "session-modes": ["user", "unlock-dialog"],
-  "url": "https://fydetabduo.com/"
-}
