@@ -44,7 +44,7 @@ reference Fydetab Duo (LBA 16384..24575, sha256
 2b3e5e613ed0f7bfc982e4110c8a48642d01237326944b5fd08e4134fcffcd96), built
 Jul 23 2024 from the same u-boot base (rockchip-linux/u-boot 63c55618)
 per the openFyde rk-uboot-5.10.0-r8 ebuild. It differs from the previous
-blob (kept as `uboot.img.pre-deep`, sha256 4fe30889...) in the bundled
+blob (sha256 4fe30889..., dropped from the tree 2026-08-15) in the bundled
 ARM Trusted Firmware: the newer BL31 resumes from DEEP suspend, the old
 one reboots the board on wake from deep (verified on hardware
 2026-08-13). Cold boot behaviour is identical (same legacy boot.scr
@@ -58,5 +58,4 @@ reference device (LBA 64 region, trailing zeros trimmed to 3702784 bytes,
 sha256 75b45f19...), SPL banner "U-Boot SPL 2017.09-231221-dirty #yang
 (Sep 06 2024)" — the field-updated loader FydeOS itself boots. The boot
 ROM prefers the eMMC idblock when one exists, so on the reference device
-this blob is bypassed; it matters for SD-only/blank-eMMC boots. Old blob
-kept as `idblock.bin.pre-deep`.
+this blob is bypassed; it matters for SD-only/blank-eMMC boots.
