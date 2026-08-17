@@ -117,12 +117,13 @@ build_one() {
     #    "sudo: effective uid is not 0" from makepkg is this, not a sudoers
     #    problem.
     # So dependencies are installed by container ROOT before makepkg runs, and
-    # makepkg itself runs with --nodeps. noarch installs only makedepends
-    # (host tools); emulated installs depends+makedepends+checkdepends, which
+    # makepkg itself runs with --nodeps. noarch installs makedepends and
+    # checkdepends (both are host tools -- build() and check() run on the
+    # build host); emulated installs depends+makedepends+checkdepends, which
     # are all real aarch64 packages the ALARM container can hold.
     local dep_flags="--syncdeps" pre_deps="" dep_arrays
     case "$mode" in
-        noarch)   dep_arrays='"${makedepends[@]}"' ;;
+        noarch)   dep_arrays='"${makedepends[@]}" "${checkdepends[@]}"' ;;
         emulated) dep_arrays='"${depends[@]}" "${makedepends[@]}" "${checkdepends[@]}"' ;;
         *)        dep_arrays='' ;;
     esac
