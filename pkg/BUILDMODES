@@ -34,3 +34,31 @@ linux-fydetab                  skip
 # No UEFI in this image, and nothing in packages.list pulls them in.
 grub                           skip
 grub-btrfs                     skip
+
+# --- Omarchy profile packages, vendored from omacom-io/omarchy-pkgs@045740e
+# (see pkgbuilds/OMARCHY-VENDOR.md for provenance and local changes).
+# Configs, fonts, and prebuilt-aarch64 binary repacks: nothing compiles.
+omarchy                        noarch
+omarchy-settings               noarch
+omarchy-keyring                noarch
+omarchy-nvim                   noarch
+ttf-jetbrains-mono-nerd-basic  noarch
+ttf-ia-writer                  noarch
+tobi-try                       noarch
+ufw-docker                     noarch
+xdg-terminal-exec              noarch
+yaru-icon-theme                noarch
+aether                         noarch
+mise-bin                       noarch
+localsend-bin                  noarch
+# Compiled target code (Rust/Go/C++), no cross support in their builds.
+ttfx                           emulated
+herdr                          emulated
+cliamp                         emulated
+omacalc                        emulated
+omacut                         emulated
+omawrite                       emulated
+yay                            emulated
+tensaku                        emulated
+tzupdate                       emulated
+hyprland-preview-share-picker  emulated

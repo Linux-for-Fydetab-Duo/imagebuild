@@ -96,7 +96,10 @@ Phase 0 — Hyprland-on-panthor smoke test — DONE 2026-08-17, PASSED
   monitors + grim screenshot. GDM restored afterwards; test packages
   left installed on the bench device.
 
-Phase 1 — first-party package layer
+Phase 1 — first-party package layer — DONE 2026-08-17: all 23
+  vendored packages build green into repo/fyde (three build fixes,
+  recorded in pkgbuilds/OMARCHY-VENDOR.md and pkg/build-pkg.sh).
+  Original scope:
   Vendor the ~20 needed PKGBUILDs from omacom-io/omarchy-pkgs into
   pkgbuilds/ (or a pkgbuilds/omarchy/ subtree), register in
   pkg/BUILDMODES (Rust/Go/C++ → emulated; fonts/configs → noarch),
