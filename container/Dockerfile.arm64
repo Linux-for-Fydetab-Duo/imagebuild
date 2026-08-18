@@ -37,7 +37,7 @@ RUN sed -i \
         /etc/pacman.conf \
     && pacman-key --init \
     && pacman-key --populate archlinuxarm \
-    && pacman -Syu --noconfirm --needed base-devel git \
+    && pacman -Syyu --noconfirm --needed base-devel git \
     && pacman -Scc --noconfirm
 
 # The ALARM tarball already has an 'alarm' user (uid 1000); makepkg runs as it.

@@ -7,7 +7,12 @@
 # build.sh checks that before starting anything.
 FROM archlinux:base
 
-RUN pacman -Sy --noconfirm --needed \
+# -Syy, not -Sy: the base image ships baked sync databases, and a conditional
+# refresh can keep them when CDN timestamps disagree. A stale db then points
+# at package files that left the pool (packages move between repos), and the
+# install dies on 404s -- broke CI on 2026-08-18 when elfutils moved from
+# extra to core. Force a full db download; it costs a few MB per build.
+RUN pacman -Syy --noconfirm --needed \
         arch-install-scripts \
         pacman-contrib \
         e2fsprogs \
