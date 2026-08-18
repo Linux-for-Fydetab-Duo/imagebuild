@@ -1,14 +1,8 @@
-# Based on AUR voxtype-bin 0.7.5-1 (Peter Jackson <pete@peteonrails.com>),
-# rewritten for aarch64: upstream publishes signed aarch64 release binaries
-# (cpu + onnx) that the AUR package does not package. Kept under the
-# voxtype-bin name because Omarchy's menu and install/remove scripts check
-# for that exact package name (omarchy-pkg-present voxtype-bin).
-# Not published for aarch64, therefore omitted relative to AUR: the GPU
-# variants (vulkan/cuda/migraphx), the OSD frontends and the audio-bridge
-# sidecar -- the on-screen mic visualizer is unavailable, dictation itself
-# is unaffected. PGP source verification is replaced by sha256 pins taken
-# from upstream's signed SHA256SUMS.txt (support files reuse the AUR pins,
-# same tag).
+# aarch64 rewrite of AUR voxtype-bin 0.7.5-1, packaging upstream's signed
+# aarch64 release binaries the AUR package omits. Same pkgname on purpose:
+# Omarchy's menu checks for voxtype-bin. GPU variants, OSD frontends and
+# audio-bridge have no aarch64 builds and are left out. sha256 pins come
+# from upstream's signed SHA256SUMS.txt.
 pkgname=voxtype-bin
 pkgver=0.7.5
 pkgrel=1

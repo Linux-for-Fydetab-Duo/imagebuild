@@ -184,9 +184,8 @@ yay
 yt-dlp
 zbar
 zoxide
-# The official installer adds zram-generator outside the base manifest
-# (omarchy-other.packages); omarchy-settings ships the zram config and
-# sysctl tuning that assume it, so without it the image has no swap.
+# Outside upstream's base manifest but installed by its ISO; the shipped
+# zram config and sysctls assume it.
 zram-generator
 
 # =======

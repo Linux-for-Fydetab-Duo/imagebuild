@@ -1,29 +1,21 @@
 #!/bin/bash
 # Runs inside the target rootfs (emulated aarch64).
-#
-# Ports of upstream Omarchy's install-time configuration that the official
-# ISO applies via omarchy-apply-system (install/config/*.sh,
-# install/hardware/*.sh) and that fit build time. Each block names its
-# upstream source; keep the applied content byte-equivalent to upstream so
-# re-syncs stay a diff away.
+# Build-time ports of upstream's install-time config; each block names its
+# upstream source, keep the content byte-equivalent for easy re-syncs.
 set -euo pipefail
 
-# install/config/theme-system.sh: omarchy-theme-set-browser refuses to write
-# theme policies unless this directory exists, so browser theming silently
-# never applies without it.
+# install/config/theme-system.sh: omarchy-theme-set-browser skips browsers
+# when this directory is missing.
 mkdir -p /etc/chromium/policies/managed
 chmod a+rw /etc/chromium/policies/managed
 
-# install/config/theme-system.sh: default Chromium to following the system
-# appearance ("device") instead of its own dark scheme.
+# install/config/theme-system.sh: Chromium follows the system appearance.
 mkdir -p /usr/lib/chromium
 echo '{"browser":{"theme":{"color_scheme":0,"color_scheme2":0}}}' > \
   /usr/lib/chromium/initial_preferences
 
-# install/config/ssh-command-path.sh: SSH commands (ssh host cmd) run without
-# a login shell, so PAM env is the only place they inherit PATH from; without
-# the mise shims there, remote commands cannot find mise-managed tools. This
-# matters more here than upstream: this image ships sshd enabled.
+# install/config/ssh-command-path.sh: non-shell logins (ssh host cmd) get
+# PATH only from PAM env, so mise tools need the shims listed here.
 if ! grep -qE '^PATH[[:space:]]' /etc/security/pam_env.conf; then
   cat >>/etc/security/pam_env.conf <<'EOF'
 
@@ -32,11 +24,9 @@ PATH DEFAULT=/usr/local/sbin:/usr/local/bin:/usr/bin:@{HOME}/.local/share/mise/s
 EOF
 fi
 
-# install/hardware/set-wireless-regdom.sh: persist the wireless regulatory
-# domain implied by the image's timezone (upstream derives it the same way at
-# install time). Without it the regdom stays world/00: fewer 5 GHz channels
-# and reduced TX power. Users who change timezone can change the regdom the
-# same way; the guard keeps an existing setting untouched.
+# install/hardware/set-wireless-regdom.sh: the world regdom restricts 5 GHz
+# channels and TX power; derive the country from the timezone as upstream
+# does, never overwriting an existing setting.
 regdom_file=/etc/conf.d/wireless-regdom
 if [ -f "$regdom_file" ] && ! grep -q '^WIRELESS_REGDOM=' "$regdom_file"; then
     timezone=$(readlink -f /etc/localtime || true)

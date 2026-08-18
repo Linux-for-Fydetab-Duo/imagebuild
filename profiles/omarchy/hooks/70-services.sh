@@ -100,12 +100,9 @@ enable_unit fix-display.service
 # firewall, which no chroot has, and the DNS rules only matter once containers
 # run.
 #
-# Needs linux-fydetab >= 6.12.43-18: older kernels lack nftables and, worse,
-# carry CONFIG_STATIC_USERMODEHELPER pointing at a binary Arch does not ship,
-# which silently breaks all kernel module autoloading -- ufw-init then dies
-# fail-CLOSED (DROP policies set, allow chains never installed) and the device
-# drops off the network. Verified on device 2026-08-18: with the pkgrel-18
-# kernel a cold boot brings ufw up clean with every match autoloaded.
+# Needs linux-fydetab >= 6.12.43-18: older kernels lack nftables and their
+# broken usermodehelper prevents module autoload, so ufw-init dies
+# fail-closed and drops the device off the network.
 if [ -f /etc/ufw/ufw.conf ]; then
     sed -i 's/^ENABLED=.*/ENABLED=yes/' /etc/ufw/ufw.conf
     grep -qx 'ENABLED=yes' /etc/ufw/ufw.conf || {

@@ -7,15 +7,9 @@
 # build.sh checks that before starting anything.
 FROM archlinux:base
 
-# WORKAROUND for Arch's CDN, not a fix we own: the default mirrorlist points
-# at geo/fastly.mirror.pkgbuild.com, and some Fastly edges (notably near
-# GitHub's runners) kept serving a >21h-stale db pair after elfutils moved
-# from extra to core (2026-08-18) -- the db then references pool files that
-# are gone for good and the install dies on 404s, flapping per-runner.
-# Prepending a plain rsync-synced mirror makes the db source globally
-# consistent; the CDN mirrors remain as fallback for package files.
-# -Syy (not -Sy) additionally forces a full db download past the base
-# image's baked databases.
+# CDN workaround (defect is Arch-side): some CDN edges serve a stale db that
+# references pool files already gone, so use a plain rsync mirror as the db
+# source. -Syy forces past the base image's baked dbs.
 RUN sed -i '1i Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch' \
         /etc/pacman.d/mirrorlist \
     && pacman -Syy --noconfirm --needed \

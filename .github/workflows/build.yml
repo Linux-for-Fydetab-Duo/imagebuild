@@ -98,12 +98,9 @@ jobs:
               -p 'fyde.db.tar.gz' -p 'fyde.files.tar.gz'
             ln -sf fyde.db.tar.gz fyde.db
             ln -sf fyde.files.tar.gz fyde.files
-            # The release can carry superseded package files (uploads only
-            # replace same-name assets), and seeding two generations of one
-            # package breaks `repo-add --new --remove`: while processing the
-            # older file it deletes the db-referenced newer one from disk,
-            # then errors on it (broke CI 2026-08-18). The db is the truth --
-            # drop every seeded package file it does not reference.
+            # Seeding two generations of one package breaks repo-add
+            # --new --remove; the db is the truth, drop what it does not
+            # reference.
             tar -xzf fyde.db.tar.gz --wildcards '*/desc' -O 2>/dev/null |
               grep -A1 '%FILENAME%' | grep '\.pkg\.tar\.zst$' | sort > /tmp/db-files
             for f in *.pkg.tar.zst; do
@@ -147,9 +144,8 @@ jobs:
             gh release delete-asset repo "$f" -y 2>/dev/null || true
           done
           gh release upload repo "${files[@]}"
-          # Prune release assets that are no longer in the repo dir, so the
-          # release always mirrors the dir exactly and the next run's seed
-          # gets exactly one generation of every package.
+          # Keep the release mirroring the dir so the next seed gets one
+          # generation per package.
           gh release view repo --json assets -q '.assets[].name' |
             grep '\.pkg\.tar\.zst$' | while read -r a; do
               [ -f "$a" ] || { echo "deleting superseded asset $a"
