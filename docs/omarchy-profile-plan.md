@@ -108,7 +108,12 @@ Phase 1 — first-party package layer — DONE 2026-08-17: all 23
   Verify: pacman -S omarchy succeeds in an aarch64 container against
   [fyde] + ALARM.
 
-Phase 2 — profiles/omarchy in this repo
+Phase 2 — profiles/omarchy in this repo — DONE 2026-08-18: first
+  image (930 packages, zero GNOME) booted on device on the first try.
+  SDDM autologin → Omarchy Hyprland session as 'arch'; the Lua config
+  layer engages ("[cfg] Using lua config"), quickshell runs Omarchy's
+  shell, panel upright at transform 3 / scale 2. Verified over SSH +
+  screenshot. Original scope:
   Copy arch-gnome profile as the base: same boot/, firmware/,
   image.conf, kernel. New packages.list = omarchy base manifest minus
   x86 leftovers plus our device set (linux-fydetab, ap6275p-firmware,

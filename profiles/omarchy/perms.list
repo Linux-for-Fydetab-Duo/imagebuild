@@ -1,0 +1,42 @@
+# Ownership and modes applied to the overlay after it is copied into the rootfs.
+# Applied by stages/02-customize.sh, in file order.
+#
+# Format:  <path> <uid> <gid> <mode>
+# A trailing slash on <path> means "chown recursively"; the mode is always
+# applied to the named path only, never recursively.
+#
+# Needed because git records only the executable bit, so every overlay file
+# arrives as 644 root:root.
+
+/etc/                                   0    0    755
+/home                                   0    0    755
+/usr                                    0    0    755
+/usr/bin                                0    0    755
+/usr/lib                                0    0    755
+/usr/lib/systemd                        0    0    755
+
+# Credential files. The overlay ships these at 644, and the previous build never
+# corrected them -- the released images have world-readable password hashes for
+# both root and the default 'arch' account (which share one hash). Do not
+# reproduce that.
+/etc/shadow                             0    0    600
+/etc/gshadow                            0    0    600
+/etc/passwd                             0    0    644
+/etc/group                              0    0    644
+
+# sudo refuses to parse a drop-in that is group- or world-writable, and 0440 is
+# what visudo enforces.
+/etc/sudoers.d                          0    0    750
+/etc/sudoers.d/g_wheel                  0    0    440
+/etc/polkit-1/rules.d                   0    0    750
+
+# First-boot helper scripts. Both must be executable or their units die with
+# 203/EXEC. (arch-gnome also lists /usr/bin/remove-calamares; this profile
+# ships no calamares, so neither the script nor the entry is here.)
+/usr/bin/resizefs                       0    0    755
+/usr/bin/oemcleanup                     0    0    755
+
+# No entry for /home/arch: this profile puts nothing under /home in the
+# overlay, and perms.list is applied before 02-customize.sh seeds the home
+# directories, so an entry here would fail on a path that does not exist yet.
+# The seeding step creates /home/arch and chowns it to 1001:1001 itself.

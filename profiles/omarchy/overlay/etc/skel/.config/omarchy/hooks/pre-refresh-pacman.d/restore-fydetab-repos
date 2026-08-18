@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Put this device's pacman configuration back after `omarchy refresh pacman`.
+#
+# omarchy-refresh-pacman overwrites /etc/pacman.conf and /etc/pacman.d/mirrorlist
+# with Omarchy's channel templates, which point at mirror.omarchy.org and
+# pkgs.omarchy.org -- both x86_64-only, and neither carries [fyde] or the
+# Arch Linux ARM tree this image is built from. It then runs this hook (the
+# sanctioned escape, see omarchy-hook(1) / pre-refresh-pacman.d) before
+# `pacman -Syyuu`, so restoring here is what keeps the upgrade resolvable.
+#
+# The sources are snapshots of the shipped configuration, taken at image build
+# time by profiles/omarchy/hooks/90-pacman-snapshot.sh.
+
+set -e
+
+for pair in \
+  /usr/share/fydetab/pacman.conf:/etc/pacman.conf \
+  /usr/share/fydetab/mirrorlist:/etc/pacman.d/mirrorlist; do
+  src=${pair%%:*}
+  dst=${pair##*:}
+
+  if [[ ! -r $src ]]; then
+    echo "restore-fydetab-repos: $src is missing, leaving $dst alone" >&2
+    continue
+  fi
+
+  sudo install -Dm644 "$src" "$dst"
+done

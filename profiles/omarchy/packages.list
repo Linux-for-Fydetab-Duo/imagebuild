@@ -1,0 +1,249 @@
+# Packages installed into the image by stages/01-bootstrap.sh.
+# Lines starting with # are ignored; there is no inline-comment support
+# (01-bootstrap.sh strips whole comment lines only), so every note is on a
+# line of its own.
+#
+# This list is omarchy 4.0.0's install/omarchy-base.packages (basecamp/omarchy
+# @ 1c1116b6, 147 entries) plus the FydeTab Duo device set carried over from
+# profiles/arch-gnome/packages.list. GNOME is not carried over: Omarchy's own
+# desktop (hyprland + quickshell + sddm) replaces it.
+#
+# Every name below was checked on 2026-08-17 against the ALARM aarch64
+# core/extra/alarm/aur databases and repo/fyde/aarch64/fyde.db.
+#
+# Substituted for aarch64:
+#   mise           -> mise-bin       arm64 upstream tarball, built in [fyde]
+#   localsend      -> localsend-bin  same
+#   quickshell-git -> quickshell     ALARM ships the 0.3.0 release
+#   nvim           -> neovim         nvim is only a provides= of neovim
+#
+# Dropped from the upstream manifest (one word each = why):
+#   asdcontrol               unavailable
+#   dotnet-runtime           unavailable
+#   obs-studio               unavailable
+#   obsidian                 unavailable
+#   pinta                    unavailable
+#   qemu-user-static-binfmt  unavailable
+# (all six are absent from ALARM aarch64 and from [fyde]; the first is an
+# Apple Studio Display tool, the last a build-host binfmt helper.)
+#
+# Not carried over from profiles/arch-gnome/packages.list (one word each):
+#   gdm, gnome-*, seahorse, geary, vlc         gnome
+#   xorg-server, xf86-video-fbdev              x11
+#   network-manager-applet, blueman            duplicated
+#   nano, lsb-release, openbsd-netcat          superseded
+#   bash, gvfs                                 implied
+#   fydeos-wallpapers                          branding
+#   calamares-settings-fydetab                 installer
+# ("duplicated" = Omarchy's shell owns that UI; "superseded" = the Omarchy set
+# already ships an equivalent; "implied" = another package pulls it in.)
+
+# ============
+# OMARCHY BASE
+# ============
+# install/omarchy-base.packages, in upstream order, so a re-sync is a diff.
+aether
+alsa-utils
+avahi
+bash-completion
+bat
+bluez
+bluez-tools
+bluez-utils
+bolt
+brightnessctl
+btop
+chromium
+clang
+cliamp
+cups
+cups-browsed
+cups-filters
+cups-pdf
+ddcutil
+docker
+docker-buildx
+docker-compose
+dosfstools
+dua-cli
+evince
+exfatprogs
+expac
+eza
+fakeroot
+fastfetch
+fcitx5
+fcitx5-gtk
+fcitx5-qt
+fd
+ffmpegthumbnailer
+fontconfig
+foot
+fzf
+git
+gnome-keyring
+gnome-themes-extra
+grim
+gpu-screen-recorder
+gum
+gvfs-mtp
+gvfs-nfs
+gvfs-smb
+herdr
+hyprland
+hyprland-guiutils
+hyprland-preview-share-picker
+hyprpicker
+hyprsunset
+imagemagick
+imv
+inetutils
+inotify-tools
+inxi
+networkmanager
+jq
+kdenlive
+kernel-modules-hook
+lazydocker
+lazygit
+less
+libsecret
+libvips
+libyaml
+libreoffice-fresh
+llvm
+localsend-bin
+lua51
+luarocks
+man-db
+mariadb-libs
+mise-bin
+moonlight-qt
+mpv
+mpv-mpris
+nautilus
+nautilus-python
+gnome-disk-utility
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+nss-mdns
+neovim
+omacalc
+omacut
+omawrite
+omarchy-nvim
+pacman-contrib
+pamixer
+plocate
+plymouth
+postgresql-libs
+power-profiles-daemon
+python-gobject
+python-poetry-core
+ttfx
+qrencode
+quickshell
+ripgrep
+ruby
+tensaku
+sddm
+slurp
+socat
+starship
+sushi
+system-config-printer
+tesseract
+tesseract-data-eng
+tldr
+tree-sitter-cli
+tmux
+tobi-try
+ttf-ia-writer
+ttf-jetbrains-mono-nerd-basic
+tzupdate
+udiskie
+ufw
+ufw-docker
+unzip
+usage
+uwsm
+whois
+wireless-regdb
+wireplumber
+wl-clipboard
+wtype
+woff2-font-awesome
+xdg-desktop-portal-gtk
+xdg-desktop-portal-hyprland
+xdg-terminal-exec
+xournalpp
+yaru-icon-theme
+yay
+yt-dlp
+zbar
+zoxide
+
+# =======
+# OMARCHY
+# =======
+# The desktop meta-package itself is NOT in omarchy-base.packages -- upstream's
+# ISO installs it separately. It pulls omarchy-settings (the /etc/skel config
+# layer, the SDDM theme and /usr/local/share/wayland-sessions/omarchy.desktop),
+# hyprland, quickshell, uwsm, sddm and omarchy-keyring. Our [fyde] rebuild has
+# the limine/snapper bootloader deps removed (see pkgbuilds/OMARCHY-VENDOR.md).
+omarchy
+
+# ======
+# DEVICE
+# ======
+# FydeTab Duo (RK3588S) enablement, from profiles/arch-gnome/packages.list.
+base
+base-devel
+sudo
+polkit
+archlinux-keyring
+archlinuxarm-keyring
+fyde-keyring
+fyde-mirrorlist
+linux-fydetab
+# The [fyde] mkinitcpio fork; linux-fydetab pulls it in as a dependency anyway,
+# and [fyde] is first in the build-time pacman.conf, but naming it here keeps
+# the initramfs generator explicit.
+mkinitcpio
+linux-firmware
+linux-firmware-whence
+ap6275p-firmware
+# Board services, firmware and udev rules (fydetabduo.service,
+# bluetooth-fydetab.service, fix-display.service, iio-sensor-proxy drop-in).
+# WARNING: this package depends on gnome-shell-extension-gjs-osk, which pulls
+# gnome-shell + gnome-settings-daemon + gjs into the image. The fix belongs in
+# pkgbuilds/fydetabduo-post-install (make the on-screen-keyboard and X11
+# gesture deps optdepends), not here.
+fydetabduo-post-install
+libdrm
+cpupower
+lm_sensors
+lshw
+e2fsprogs
+parted
+btrfs-progs
+# The overlay enables sshd.service; nothing in the Omarchy set pulls openssh.
+openssh
+pipewire-pulse
+pipewire-alsa
+pipewire-jack
+
+# ===
+# GPU  -- Mali G610 driven by the panthor kernel driver
+# ===
+# panthor (kernel, in linux-fydetab) + panfrost gallium (mesa) + panvk
+# (vulkan-panfrost). NOT the Rockchip vendor mali_kbase blob, libmali or
+# mesa-panfork-git.
+#
+# The CSF firmware comes from linux-firmware-other (pulled in by
+# linux-firmware), which ships arm/mali/arch10.8/mali_csffw.bin. Our
+# mali-G610-firmware-rkr4 package installs the same path and pacstrap fails on
+# the file conflict, so it stays in the repo as a fallback but out of the image.
+mesa
+vulkan-panfrost
