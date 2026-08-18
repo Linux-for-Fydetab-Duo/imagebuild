@@ -19,6 +19,19 @@ Local changes, kept deliberately minimal:
   upstream's `makepkg -s` flow installs depends too and masks the
   omission, our noarch builds install makedepends only (see
   pkg/build-pkg.sh).
+- voxtype-bin (added 2026-08-18, from AUR not omarchy-pkgs): Omarchy's
+  dictation installer runs `omarchy-pkg-add wtype voxtype-bin`, and AUR
+  voxtype-bin packages only x86_64 binaries. Upstream voxtype publishes
+  signed aarch64 release binaries (cpu + onnx), so our copy is an
+  aarch64-only rewrite packaging those under the same compat-critical
+  name (Omarchy's menu checks `omarchy-pkg-present voxtype-bin`). GPU
+  variants, OSD frontends and audio-bridge have no aarch64 builds and
+  are omitted -- dictation works, the mic overlay doesn't. Kept out of
+  packages.list on purpose: dictation stays menu-driven opt-in exactly
+  as upstream ships it. Caveat: `voxtype setup --download` fetches its
+  model from huggingface.co, unreachable from some networks -- the
+  model can be placed manually at
+  ~/.local/share/voxtype/models/ggml-base.en.bin (hf-mirror.com works).
 
 Deliberately NOT vendored (and why):
 

@@ -1,0 +1,89 @@
+# Based on AUR voxtype-bin 0.7.5-1 (Peter Jackson <pete@peteonrails.com>),
+# rewritten for aarch64: upstream publishes signed aarch64 release binaries
+# (cpu + onnx) that the AUR package does not package. Kept under the
+# voxtype-bin name because Omarchy's menu and install/remove scripts check
+# for that exact package name (omarchy-pkg-present voxtype-bin).
+# Not published for aarch64, therefore omitted relative to AUR: the GPU
+# variants (vulkan/cuda/migraphx), the OSD frontends and the audio-bridge
+# sidecar -- the on-screen mic visualizer is unavailable, dictation itself
+# is unaffected. PGP source verification is replaced by sha256 pins taken
+# from upstream's signed SHA256SUMS.txt (support files reuse the AUR pins,
+# same tag).
+pkgname=voxtype-bin
+pkgver=0.7.5
+pkgrel=1
+pkgdesc="Push-to-talk voice-to-text for Linux (upstream aarch64 binaries)"
+arch=('aarch64')
+url="https://voxtype.io"
+license=('MIT')
+depends=(
+    'alsa-lib'
+    'curl'
+    'gcc-libs'
+    'glibc'
+)
+optdepends=(
+    'wtype: keyboard simulation for Wayland (recommended, best CJK support)'
+    'wl-clipboard: clipboard support'
+    'libnotify: desktop notifications'
+    'pipewire: audio server (recommended)'
+    'pipewire-alsa: ALSA compatibility for PipeWire (required if using PipeWire)'
+)
+provides=('voxtype')
+conflicts=('voxtype')
+backup=('etc/voxtype/config.toml')
+install=voxtype-bin.install
+_github="https://github.com/peteonrails/voxtype/releases/download/v$pkgver"
+_raw="https://raw.githubusercontent.com/peteonrails/voxtype/v$pkgver"
+source=(
+    # Whisper CPU binary and ONNX CPU binary (Parakeet, Moonshine, ...)
+    "voxtype-$pkgver-cpu::$_github/voxtype-$pkgver-linux-aarch64-cpu"
+    "voxtype-$pkgver-onnx::$_github/voxtype-$pkgver-linux-aarch64-onnx"
+    # Config and support files
+    "config-$pkgver.toml::$_raw/config/default.toml"
+    "voxtype-$pkgver.service::$_raw/packaging/systemd/voxtype.service"
+    "voxtype-$pkgver.bash::$_raw/packaging/completions/voxtype.bash"
+    "voxtype-$pkgver.zsh::$_raw/packaging/completions/voxtype.zsh"
+    "voxtype-$pkgver.fish::$_raw/packaging/completions/voxtype.fish"
+    "LICENSE-$pkgver::$_raw/LICENSE"
+    "README-$pkgver.md::$_raw/README.md"
+    # Desktop entry + terminal launcher for `voxtype configure`
+    "voxtype-configure-$pkgver.desktop::$_raw/packaging/voxtype-configure.desktop"
+    "voxtype-configure-launcher-$pkgver::$_raw/packaging/scripts/voxtype-configure-launcher"
+)
+sha256sums=(
+    'bf72fbfaae1f4720c25ee0a8e75ec381f6b7811b1e810d80dfb9207f4ebc2e4c'  # voxtype-cpu
+    '360cc6e2ccbce7ea0d7c7cf92f23ebada7a6678f0e92ddaecbea44966d757b63'  # voxtype-onnx
+    'a0bc20688fbf93bfcebbde1e1cc5694a835931b2ff05ac27d4c92e88b7a12003'  # config/default.toml
+    '531c3658e229619e56bb01659fb81f401767b85e1d6e2acd1ac67ee3414a168c'  # voxtype.service
+    '65c95805d9b03ccc2fadb9d63a03ab79974b00091df8457ee8ef290ec6bd5b12'  # voxtype.bash
+    'e5e63b3c7f48238cf719e4f2ef90c1f9c5c7e8cd25eaebc9f78bdd34b24b6605'  # voxtype.zsh
+    'f720ddd24ee97c105b448323899c36bca7c63d00c2d42c4a3da70c3d157dccbb'  # voxtype.fish
+    '31123c45b4ff9cb5fd9e01083350fea6ccaf14969013fd48e4c95fdf89e6eb4b'  # LICENSE
+    '183d5cf3c48457800a3d5ecc4645ce2b5cdfa624f2352cddaa59e25d2efd55b4'  # README.md
+    '32144a4a5210092b0aa909f6de7a43ebe8bbf82fa3dfb1f3519787512fdf8e4b'  # voxtype-configure.desktop
+    '2001788ae3c087ff2589ff69c9598160da1c783025cc52ca3382736694a97090'  # voxtype-configure-launcher
+)
+
+package() {
+    # Both CPU-inference binaries live under /usr/lib/voxtype/ like the AUR
+    # package's variants; the .install script points /usr/bin/voxtype at the
+    # Whisper one and `voxtype setup` can switch them later.
+    install -Dm755 "$srcdir/voxtype-$pkgver-cpu" "$pkgdir/usr/lib/voxtype/voxtype-cpu"
+    install -Dm755 "$srcdir/voxtype-$pkgver-onnx" "$pkgdir/usr/lib/voxtype/voxtype-onnx"
+
+    install -Dm755 "$srcdir/voxtype-configure-launcher-$pkgver" \
+        "$pkgdir/usr/bin/voxtype-configure-launcher"
+    install -Dm644 "$srcdir/voxtype-configure-$pkgver.desktop" \
+        "$pkgdir/usr/share/applications/voxtype-configure.desktop"
+
+    install -Dm644 "$srcdir/config-$pkgver.toml" "$pkgdir/etc/voxtype/config.toml"
+    install -Dm644 "$srcdir/voxtype-$pkgver.service" "$pkgdir/usr/lib/systemd/user/voxtype.service"
+
+    install -Dm644 "$srcdir/README-$pkgver.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
+    install -Dm644 "$srcdir/LICENSE-$pkgver" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+
+    install -Dm644 "$srcdir/voxtype-$pkgver.bash" "$pkgdir/usr/share/bash-completion/completions/voxtype"
+    install -Dm644 "$srcdir/voxtype-$pkgver.zsh" "$pkgdir/usr/share/zsh/site-functions/_voxtype"
+    install -Dm644 "$srcdir/voxtype-$pkgver.fish" "$pkgdir/usr/share/fish/vendor_completions.d/voxtype.fish"
+}

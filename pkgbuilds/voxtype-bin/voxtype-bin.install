@@ -1,0 +1,28 @@
+# aarch64 has exactly two variants (both CPU inference): the Whisper binary
+# voxtype-cpu and the ONNX-engines binary voxtype-onnx. /usr/bin/voxtype is a
+# plain symlink at whichever the user last selected -- no GPU wrapper scripts,
+# so upgrades only need to preserve the symlink target.
+
+post_install() {
+    ln -sf /usr/lib/voxtype/voxtype-cpu /usr/bin/voxtype
+
+    echo ""
+    echo "==> Voxtype post-installation steps:"
+    echo "    1. Add your user to the 'input' group:"
+    echo "       sudo usermod -aG input \$USER"
+    echo "    2. Log out and back in for group changes to take effect"
+    echo "    3. Download a model:  voxtype setup model"
+    echo "    4. Start voxtype:     systemctl --user enable --now voxtype"
+    echo ""
+}
+
+post_upgrade() {
+    # Keep the user's engine choice; repair a dangling or missing link.
+    if [ ! -e /usr/bin/voxtype ] || [ ! -e "$(readlink -f /usr/bin/voxtype)" ]; then
+        ln -sf /usr/lib/voxtype/voxtype-cpu /usr/bin/voxtype
+    fi
+}
+
+post_remove() {
+    rm -f /usr/bin/voxtype
+}
