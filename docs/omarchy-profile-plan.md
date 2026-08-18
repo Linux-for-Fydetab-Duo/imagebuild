@@ -110,7 +110,8 @@ Phase 1 — first-party package layer — DONE 2026-08-17: all 23
 
 Phase 2 — profiles/omarchy in this repo — DONE 2026-08-18: first
   image (930 packages, zero GNOME) booted on device on the first try.
-  SDDM autologin → Omarchy Hyprland session as 'arch'; the Lua config
+  SDDM autologin → Omarchy Hyprland session as the default user
+  (renamed arch → omarchy on 2026-08-18); the Lua config
   layer engages ("[cfg] Using lua config"), quickshell runs Omarchy's
   shell, panel upright at transform 3 / scale 2. Verified over SSH +
   screenshot. Original scope:
@@ -159,3 +160,15 @@ Phase 5 — CI + release
   gaming stack.
 - Tablet UX effort is the real unknown; everything before it is
   mostly mechanical.
+
+## Deferred TODOs
+
+- First-boot password change (user-requested 2026-08-18, deferred to
+  a later round): the image ships a known password (user and root:
+  omarchy) with passwordless-sudo wheel and SDDM autologin — fine on
+  the bench, unacceptable to hand out. Design needed: plain
+  chage -d 0 expiry is invisible under autologin (auth is skipped),
+  so the change must hook the first session instead — candidates: a
+  first-run omarchy provisioning step (upstream has one we dropped),
+  a session-side oneshot prompt, or disabling autologin until the
+  password is rotated.

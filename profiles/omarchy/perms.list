@@ -17,7 +17,7 @@
 
 # Credential files. The overlay ships these at 644, and the previous build never
 # corrected them -- the released images have world-readable password hashes for
-# both root and the default 'arch' account (which share one hash). Do not
+# both root and the default 'omarchy' account (which share one hash). Do not
 # reproduce that.
 /etc/shadow                             0    0    600
 /etc/gshadow                            0    0    600
@@ -36,7 +36,7 @@
 /usr/bin/resizefs                       0    0    755
 /usr/bin/oemcleanup                     0    0    755
 
-# No entry for /home/arch: this profile puts nothing under /home in the
+# No entry for /home/omarchy: this profile puts nothing under /home in the
 # overlay, and perms.list is applied before 02-customize.sh seeds the home
 # directories, so an entry here would fail on a path that does not exist yet.
-# The seeding step creates /home/arch and chowns it to 1001:1001 itself.
+# The seeding step creates /home/omarchy and chowns it to 1001:1001 itself.

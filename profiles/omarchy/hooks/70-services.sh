@@ -46,6 +46,6 @@ enable_unit resizefs.service
 
 # Deliberately NOT enabled: oemcleanup.service. Post-install teardown belongs
 # to an installer, not to the live image -- oemcleanup runs `userdel -r -f
-# arch`, which would delete the account this image logs in automatically. This
-# profile ships no installer at all (v1 has no calamares), so the unit is inert
-# and kept only so a later OEM flow has it to enable.
+# omarchy`, which would delete the account this image logs in automatically.
+# This profile ships no installer at all (v1 has no calamares), so the unit is
+# inert and kept only so a later OEM flow has it to enable.
