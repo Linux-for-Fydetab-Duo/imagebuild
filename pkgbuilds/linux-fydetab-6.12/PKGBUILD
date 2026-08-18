@@ -6,7 +6,7 @@ _kernel=linux-fydetab
 pkgbase=$_kernel
 pkgname=("${pkgbase}-headers" $pkgbase)
 pkgver=6.12.43
-pkgrel=15
+pkgrel=18
 arch=('aarch64')
 license=('GPL2')
 url="https://github.com/Linux-for-Fydetab-Duo/linux-fydetabduo"
@@ -47,6 +47,34 @@ build() {
   # Configure with the real config FIRST; everything after -- prepare, the
   # version file, the build itself -- must agree on it.
   make ${MAKEFLAGS} fydetabduo_defconfig
+
+  # The ChromeOS defconfig ships no nftables at all, but Arch's iptables
+  # binaries are nft-backed symlinks, so ufw (and docker's NAT setup) fail
+  # on the device with "Failed to initialize nft". ufw's default ruleset
+  # additionally needs the recent match (limit 22/tcp) and the LOG target,
+  # its before6.rules need the hl and rt matches (ICMPv6 ND sanity rules,
+  # RH0 drops -- iptables-nft still uses the xt extensions for these, it
+  # does not translate them to native nft expressions),
+  # and docker's bridge isolation wants br_netfilter. Diagnosed 2026-08-18:
+  # ufw.service fails open without these. TEST fragment -- fold into
+  # fydetabduo_defconfig once verified on device.
+  ./scripts/config -m NF_TABLES -e NF_TABLES_INET -m NFT_COMPAT \
+    -m NFT_LOG -m NFT_LIMIT -m NFT_CT -m NFT_NAT -m NFT_MASQ -m NFT_REJECT \
+    -m NETFILTER_XT_MATCH_RECENT -m NETFILTER_XT_TARGET_LOG \
+    -m NETFILTER_XT_MATCH_MULTIPORT -m BRIDGE_NETFILTER \
+    -m NETFILTER_XT_MATCH_HL -m IP6_NF_MATCH_RT
+
+  # Fourth ChromeOS-ism: the defconfig funnels every kernel usermodehelper
+  # call through the single binary /sbin/usermode-helper (ChromeOS ships it
+  # as a lockdown filter). Arch has no such binary, so every kernel-initiated
+  # module autoload (request_module -> /sbin/modprobe) silently fails with
+  # ENOENT: iptables-nft reports "Extension X is not supported" for any match
+  # not already loaded, ufw dies fail-closed, and anything else relying on
+  # on-demand module loading (mounts, crypto) only works if the module was
+  # preloaded by other means. Manual modprobe is unaffected, which is why
+  # this stayed hidden. Diagnosed on hardware 2026-08-18: creating the
+  # missing helper as a modprobe shim instantly fixed autoload.
+  ./scripts/config -d STATIC_USERMODEHELPER
 
   # fydetabduo_defconfig ships with CONFIG_RD_ZSTD off, but mkinitcpio (the
   # fyde build and stock >=30 alike) compresses the initramfs with zstd by
@@ -92,6 +120,13 @@ build() {
   grep -q "^CONFIG_FRAMEBUFFER_CONSOLE=y" .config || { echo "fbcon did not take"; exit 1; }
   grep -q "^CONFIG_VT_CONSOLE_SLEEP=y" .config && { echo "VT_CONSOLE_SLEEP still on"; exit 1; }
   grep -q "^CONFIG_DPM_WATCHDOG=y" .config && { echo "DPM_WATCHDOG still on"; exit 1; }
+  grep -q "^CONFIG_NF_TABLES=m" .config || { echo "NF_TABLES did not take"; exit 1; }
+  grep -q "^CONFIG_NFT_COMPAT=m" .config || { echo "NFT_COMPAT did not take"; exit 1; }
+  grep -q "^CONFIG_NETFILTER_XT_MATCH_RECENT=m" .config || { echo "XT_MATCH_RECENT did not take"; exit 1; }
+  grep -q "^CONFIG_NETFILTER_XT_TARGET_LOG=m" .config || { echo "XT_TARGET_LOG did not take"; exit 1; }
+  grep -q "^CONFIG_STATIC_USERMODEHELPER=y" .config && { echo "STATIC_USERMODEHELPER still on"; exit 1; }
+  grep -q "^CONFIG_NETFILTER_XT_MATCH_HL=m" .config || { echo "XT_MATCH_HL did not take"; exit 1; }
+  grep -q "^CONFIG_IP6_NF_MATCH_RT=m" .config || { echo "IP6_NF_MATCH_RT did not take"; exit 1; }
 
   make ${MAKEFLAGS} prepare
   make -s kernelrelease > version
