@@ -41,7 +41,10 @@ Deliberately NOT vendored (and why):
   if the shell QML needs post-release features.
 - asdcontrol: Apple Studio Display control — pointless on this device.
 - obsidian, obs-studio, pinta (+dotnet-runtime): absent from ALARM,
-  heavy or dead-end on aarch64; dropped from the first image.
+  heavy or dead-end on aarch64; dropped from the first image. Known
+  consequence: the menu's Preinstalls entry runs one omarchy-pkg-add
+  including all three, so that whole entry fails on this image (see
+  docs/omarchy-pkgs-coverage.md).
 - 1password/cursor/spotify/steam and the other proprietary x86 blobs:
   optional installers, never in the base image.
 
