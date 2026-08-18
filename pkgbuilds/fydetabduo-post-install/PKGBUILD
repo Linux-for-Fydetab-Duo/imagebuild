@@ -2,12 +2,13 @@
 
 pkgname=fydetabduo-post-install
 pkgver=20$(date +%y%m%d)
-pkgrel=6
+pkgrel=7
 pkgdesc="Fixes for FydeTab Duo"
 arch=('any')
 url="https://fydetabduo.com/"
 license=('GPL')
-depends=('iwd' 'ap6275p-firmware' 'iio-sensor-proxy' 'touchegg' 'xorg-xinput' 'xorg-xrandr' 'gnome-shell-extension-gjs-osk')
+depends=('iwd' 'ap6275p-firmware' 'iio-sensor-proxy' 'touchegg' 'xorg-xinput' 'xorg-xrandr')
+optdepends=('gnome-shell-extension-gjs-osk: on-screen keyboard for the GNOME image')
 install=fydetab.install
 backup=('etc/sddm.conf.d/fydetab.conf')
 source=('fydetabduo.service'

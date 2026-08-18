@@ -105,5 +105,7 @@ gnome-panel
 gnome-passwordsafe
 gnome-shell-extension-appindicator
 fydetabduo-post-install
+# Explicit since fydetabduo-post-install pkgrel-7 demoted it to optdepends.
+gnome-shell-extension-gjs-osk
 
 calamares-settings-fydetab
