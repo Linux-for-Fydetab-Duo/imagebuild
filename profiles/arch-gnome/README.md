@@ -9,8 +9,9 @@ from `prod-*` tags (latest: `prod-v0.1.4`).
 - GNOME is tablet-tuned: mutter honours the panel-orientation DRM property,
   touchegg gestures, and the gjs on-screen keyboard is available as an
   optional package.
-- Ships the full `linux-firmware` meta package (the omarchy profile trims
-  it to what the board needs; this profile has not adopted that yet).
+- Firmware is trimmed to what the board needs (`linux-firmware-other` for
+  the Mali GPU plus `ap6275p-firmware` for Wi-Fi/BT), like the omarchy
+  profile.
 
 ## Building and releasing
 

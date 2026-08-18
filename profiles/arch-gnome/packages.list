@@ -21,7 +21,10 @@ sudo
 polkit
 bluez-utils
 linux-fydetab
-linux-firmware
+# Not the linux-firmware meta: its vendor subpackages are ~900 MB of firmware
+# for hardware this board cannot have. -other carries the Mali CSF firmware
+# panthor needs; Wi-Fi/BT firmware comes from ap6275p-firmware.
+linux-firmware-other
 linux-firmware-whence
 libdrm
 lsb-release
@@ -53,7 +56,7 @@ openbsd-netcat
 # NOT used: the Rockchip vendor mali_kbase blob driver, libmali, or mesa-panfork-git
 # -- panfork was the pre-panthor stopgap and is obsolete here.
 #
-# The CSF firmware comes from linux-firmware-other (pulled in by linux-firmware),
+# The CSF firmware comes from linux-firmware-other,
 # which since 2026 ships arm/mali/arch10.8/mali_csffw.bin (a symlink to
 # ../arch10.10/, one blob for arch 10.8/10.10/10.12) -- verified: CSF magic OK,
 # header 0.3, version_hash 0x01050000, newer than the rkr4 blob. Our
