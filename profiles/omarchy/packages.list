@@ -215,7 +215,11 @@ linux-fydetab
 # and [fyde] is first in the build-time pacman.conf, but naming it here keeps
 # the initramfs generator explicit.
 mkinitcpio
-linux-firmware
+# Not the linux-firmware meta: its vendor subpackages (intel, nvidia, amdgpu,
+# atheros, ...) are ~900 MB of firmware for hardware this board cannot have.
+# -other carries the Mali CSF firmware panthor needs; Wi-Fi/BT firmware comes
+# from ap6275p-firmware.
+linux-firmware-other
 linux-firmware-whence
 ap6275p-firmware
 # Board services, firmware and udev rules (fydetabduo.service,
@@ -245,8 +249,8 @@ pipewire-jack
 # (vulkan-panfrost). NOT the Rockchip vendor mali_kbase blob, libmali or
 # mesa-panfork-git.
 #
-# The CSF firmware comes from linux-firmware-other (pulled in by
-# linux-firmware), which ships arm/mali/arch10.8/mali_csffw.bin. Our
+# The CSF firmware comes from linux-firmware-other, which ships
+# arm/mali/arch10.8/mali_csffw.bin. Our
 # mali-G610-firmware-rkr4 package installs the same path and pacstrap fails on
 # the file conflict, so it stays in the repo as a fallback but out of the image.
 mesa
