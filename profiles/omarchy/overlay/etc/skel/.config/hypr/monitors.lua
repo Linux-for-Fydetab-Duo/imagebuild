@@ -10,3 +10,8 @@
 -- small. GDK_SCALE matches, as in upstream's default monitors.lua.
 hl.env("GDK_SCALE", "2")
 hl.monitor({ output = "DSI-1", mode = "preferred", position = "auto", scale = 2, transform = 3 })
+
+-- The himax digitizer reports coordinates in the panel's native portrait
+-- space; map it to the rotated output or every touch lands 90° off
+-- (mutter compensated for this automatically, Hyprland does not).
+hl.config({ input = { touchdevice = { output = "DSI-1", transform = 3 } } })
