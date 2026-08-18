@@ -250,6 +250,17 @@ Phase 5 — CI + release
 - Menu install-entry gaps (accepted as-is 2026-08-18): 16 buildable
   aarch64 packages and 13 permanently-x86 entries; the work list and
   per-package details live in docs/omarchy-pkgs-coverage.md.
+- Filesystem feature gap (accepted as-is 2026-08-18): upstream is
+  Limine+btrfs+snapper+LUKS, we are U-Boot+ext4, which forfeits
+  pre-update snapshots/rollback (omarchy-update degrades gracefully:
+  omarchy-snapshot exits 127, update continues), Limine boot-menu
+  rollback, factory reset (needs the Quattro ISO's @factory subvolume
+  and LUKS re-keying), and hibernation setup (btrfs /swap subvolume +
+  Limine required). Recoverable subset if ever wanted: root-on-btrfs
+  under U-Boot brings back snapshots + CLI rollback, at the cost of a
+  btrfs-aware resizefs and image-assembly rework; boot-menu rollback
+  and factory reset would additionally need custom U-Boot integration
+  and an installer-created baseline we structurally do not have.
 
 - First-boot password change (user-requested 2026-08-18, deferred to
   a later round): the image ships a known password (user and root:
