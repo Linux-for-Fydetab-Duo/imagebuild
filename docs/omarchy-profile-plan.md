@@ -261,6 +261,18 @@ Phase 5 — CI + release
   btrfs-aware resizefs and image-assembly rework; boot-menu rollback
   and factory reset would additionally need custom U-Boot integration
   and an installer-created baseline we structurally do not have.
+- UEFI/Limine route (assessed 2026-08-18, deferred): our boot chain is
+  the prebuilt rockchip 2017.09 vendor blob set (firmware/PROVENANCE.md)
+  with the Power+VolUp recovery inside it; it cannot host UEFI, so the
+  route means replacing boot firmware -- mainline U-Boot EFI_LOADER
+  (board port; recovery redoable as an env-script ADC-key check; Limine
+  compatibility unvalidated) or EDK2-rk3588 (heavier port; recovery
+  becomes platform code). Hardest piece either way: Limine's snapshot
+  boot menu needs firmware-stage DSI panel output and USB-keyboard
+  input, else rollback is serial-only. Only worth doing on top of the
+  btrfs migration; bench-testable brick-free via maskrom/rkdeveloptool.
+  Cheaper middle path if menu-less rollback suffices: btrfs + a script
+  generating extlinux entries per snapshot on current U-Boot.
 
 - First-boot password change (user-requested 2026-08-18, deferred to
   a later round): the image ships a known password (user and root:
