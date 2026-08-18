@@ -247,6 +247,13 @@ Phase 5 — CI + release
 
 ## Deferred TODOs
 
+- Remaining feature/config gaps vs official Omarchy (audited
+  2026-08-18): ordered work list in docs/omarchy-feature-gaps.md.
+  Tier 1 quick wins: zram-generator (image currently has NO swap while
+  carrying zram-tuned sysctls) and the two chromium theming files
+  (browser theming silently dead). Also records the untested-risk
+  areas (screen recording/portal/nightlight on this GPU pipeline) and
+  the LUKS/autologin posture note.
 - Menu install-entry gaps (accepted as-is 2026-08-18): 16 buildable
   aarch64 packages and 13 permanently-x86 entries; the work list and
   per-package details live in docs/omarchy-pkgs-coverage.md.
