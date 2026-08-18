@@ -7,12 +7,18 @@
 # build.sh checks that before starting anything.
 FROM archlinux:base
 
-# -Syy, not -Sy: the base image ships baked sync databases, and a conditional
-# refresh can keep them when CDN timestamps disagree. A stale db then points
-# at package files that left the pool (packages move between repos), and the
-# install dies on 404s -- broke CI on 2026-08-18 when elfutils moved from
-# extra to core. Force a full db download; it costs a few MB per build.
-RUN pacman -Syy --noconfirm --needed \
+# WORKAROUND for Arch's CDN, not a fix we own: the default mirrorlist points
+# at geo/fastly.mirror.pkgbuild.com, and some Fastly edges (notably near
+# GitHub's runners) kept serving a >21h-stale db pair after elfutils moved
+# from extra to core (2026-08-18) -- the db then references pool files that
+# are gone for good and the install dies on 404s, flapping per-runner.
+# Prepending a plain rsync-synced mirror makes the db source globally
+# consistent; the CDN mirrors remain as fallback for package files.
+# -Syy (not -Sy) additionally forces a full db download past the base
+# image's baked databases.
+RUN sed -i '1i Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch' \
+        /etc/pacman.d/mirrorlist \
+    && pacman -Syy --noconfirm --needed \
         arch-install-scripts \
         pacman-contrib \
         e2fsprogs \
