@@ -9,7 +9,7 @@ the rootfs, not inferred. Companions: docs/omarchy-pkgs-coverage.md
 
 Status: recorded as deferred work; nothing here blocks the image.
 
-## Tier 1 -- fix first (high impact, trivial)
+## Tier 1 -- FIXED 2026-08-18 (v5 image; verified in built rootfs)
 
 1. No swap at all: `zram-generator` is not installed (verified), while
    omarchy-settings ships its zram config AND our live sysctl carries
@@ -22,7 +22,17 @@ Status: recorded as deferred work; nothing here blocks the image.
    /usr/lib/chromium/initial_preferences (color_scheme=follow-system).
    Fix: two overlay files. (install/config/theme-system.sh:10-16)
 
-## Tier 2 -- worthwhile, easy
+## Tier 2 -- FIXED 2026-08-18 (v5 image; verified in built rootfs)
+
+Fixes: hooks/65-omarchy-config.sh (chromium theming files, pam_env PATH,
+regdom GB from the image timezone), packages.list (zram-generator --
+kernel has ZRAM=m with the zstd backend, and module autoload works since
+the pkgrel-17 usermodehelper fix -- and tailscale), overlay (SSH
+keepalive drop-in, locale en_US.UTF-8, hostname omarchy, SDDM
+RememberLastUser/Session). One sub-item deliberately skipped:
+/var/lib/sddm/state.conf seeding needs the sddm user at build time,
+blocked by the /etc/passwd overlay override (Tier 3 item 8); moot under
+autologin.
 
 3. Wireless regulatory domain never set (world/00): fewer 5 GHz channels,
    lower TX power. Upstream derives it from timezone.
