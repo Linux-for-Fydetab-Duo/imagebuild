@@ -124,11 +124,41 @@ Phase 2 — profiles/omarchy in this repo — DONE 2026-08-18: first
   Verify: image boots to SDDM → Omarchy Hyprland session on device.
 
 Phase 3 — integration pass
-  Suspend/resume behaviour under Hyprland (our vop2 fix is
-  compositor-independent, but hypridle/hyprlock replace GNOME's path);
-  wifi/BT; audio (pipewire); brightness/rotation basics; omarchy-update
-  flow pointed away from omarchy.org repos (pin via the pre-refresh
-  hook + [fyde]).
+  IMPLEMENTED in the profile 2026-08-18 (edits only; not yet built or
+  booted):
+  - services: hooks/70-services.sh enables upstream's
+    install/config/enable-services.sh set on top of what it already had
+    — systemd-resolved, systemd-oomd, avahi-daemon, cups, cups-browsed,
+    docker.socket (the socket, so dockerd starts on first use),
+    linux-modules-cleanup, power-profiles-daemon — and masks
+    NetworkManager-wait-online and systemd-networkd-wait-online so
+    network-online.target cannot hold graphical.target behind DHCP.
+    cpupower stays enabled: ppd loads its placeholder driver on RK3588
+    and never writes to cpufreq, so the two coexist (verified on
+    device). Enablement is now one mechanism per unit — systemctl in
+    the hook for anything with Also=/Alias= or a non-multi-user
+    WantedBy=, an overlay .wants symlink for the rest — never both.
+  - firewall: ufw enabled (ENABLED=yes + ufw.service) with upstream's
+    rules baked into overlay/etc/ufw/{user,user6}.rules: default deny
+    incoming / allow outgoing, 53317 udp+tcp for LocalSend, and
+    `limit 22/tcp comment "omarchy-sshd"` because this image ships sshd
+    enabled. The rules are files rather than `ufw` calls in the hook:
+    an emulated aarch64 iptables cannot open its netlink socket under
+    qemu-user, so upstream's chroot-safe recipe is not chroot-safe
+    here. ufw-docker's after.rules shim and the two allow-docker-dns
+    rules are deliberately skipped. See the OPEN item below — the
+    shipped kernel cannot execute these rules at all.
+  - lock screen: overlay/etc/pam.d/omarchy-lock-password, the file
+    upstream writes from bin/omarchy-apply-lock at ISO time. Without it
+    the quickshell lock screen refuses to lock (verified on device).
+  - DNS: overlay/etc/resolv.conf is now the
+    ../run/systemd/resolve/stub-resolv.conf symlink systemd-resolved
+    expects; upstream's ISO creates it and no package does.
+  Still open in this phase: suspend/resume behaviour under Hyprland
+  (our vop2 fix is compositor-independent, but hypridle/hyprlock
+  replace GNOME's path); wifi/BT; audio (pipewire); brightness/rotation
+  basics; omarchy-update flow pointed away from omarchy.org repos (pin
+  via the pre-refresh hook + [fyde]).
 
 Phase 4 — tablet UX (open-ended)
   Omarchy is keyboard-first. Touch gestures, screen rotation
@@ -160,6 +190,54 @@ Phase 5 — CI + release
   gaming stack.
 - Tablet UX effort is the real unknown; everything before it is
   mostly mechanical.
+
+### OPEN, found during Phase 3 verification (2026-08-18)
+
+- quickshell's lock screen ignores logind's Unlock signal, so there is
+  no remote or admin unlock — `loginctl unlock-session` does nothing.
+- The shell never sets logind's LockedHint, so nothing outside the
+  session can tell whether the screen is locked.
+- RESOLVED same day: lock-on-suspend VERIFIED working end to end via
+  a logind suspend (screen came back locked, user unlocked via PAM).
+  The dbus-monitor eavesdrop fallback DOES deliver PrepareForSleep on
+  dbus-broker; the AccessDenied warning is cosmetic. Earlier failures
+  were test-methodology: `rtcwake -m mem` writes /sys/power/state
+  directly and bypasses logind entirely (no PrepareForSleep, no
+  inhibitors, no lock) — test logind-dependent behaviour with
+  `rtcwake -m no -s N` + `systemctl suspend`, never `rtcwake -m mem`.
+- Touchscreen verified working after mapping the himax digitizer to
+  the rotated output (touchdevice output/transform 3 in skel
+  monitors.lua, confirmed on device) — mutter did this implicitly,
+  Hyprland needs it explicit; same family as the display transform
+  and accelerometer mount matrix.
+- power-profiles-daemon loads its placeholder driver on RK3588, so the
+  power-profile UI is cosmetic — switching profiles changes nothing.
+- ufw cannot work on linux-fydetab 6.12.43 pkgrel<=16, for TWO stacked
+  kernel-config defects (both ChromeOS-isms in fydetabduo_defconfig,
+  both fixed in the pkgrel-17 fragment, fold into the defconfig once
+  the on-device verification is final):
+  1. CONFIG_NF_TABLES unset (plus XT_MATCH_RECENT, XT_TARGET_LOG,
+     MULTIPORT, BRIDGE_NETFILTER), so the nft-backed /usr/bin/iptables
+     Arch ships cannot talk to the kernel at all. Added as modules in
+     pkgrel-16 — which then exposed defect 2.
+  2. CONFIG_STATIC_USERMODEHELPER=y (defconfig line 790) funnels every
+     kernel usermodehelper exec through /sbin/usermode-helper, a binary
+     ChromeOS ships and Arch does not have. Every request_module —
+     i.e. ALL kernel module autoloading — silently fails with ENOENT.
+     iptables-nft then reports "Extension conntrack is not supported,
+     missing kernel module?" for any xt match not already loaded, and
+     ufw-init dies AFTER setting DROP policies but BEFORE installing
+     the INPUT jumps: fail-CLOSED, device unreachable (locked us out
+     over SSH 2026-08-18; recovered via serial console). With modules
+     preloaded by hand ufw starts and the full Omarchy rule set works,
+     which isolates autoload as the one broken link; a temporary
+     /usr/bin/usermode-helper -> modprobe symlink made cold autoload
+     work instantly, proving the mechanism. Manual modprobe never uses
+     the helper, which is why this defect stayed invisible on every
+     shipped image (it also breaks on-demand fs/crypto module loads).
+  Verification plan for pkgrel-17: install, enable ufw.service, reboot,
+  cold boot must bring ufw up with no preloading and SSH must survive.
+  Docker's iptables networking was blocked by the same pair.
 
 ## Deferred TODOs
 
