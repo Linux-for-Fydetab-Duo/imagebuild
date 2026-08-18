@@ -5,6 +5,14 @@
 #   - push of a stag-* tag: same, marked pre-release
 #   - workflow_dispatch:    full build, image kept as a workflow artifact
 #
+# Profile selection (which image gets built):
+#   - workflow_dispatch: the "profile" choice input (Run workflow dropdown)
+#   - tags: prod-omarchy-* / stag-omarchy-* build the omarchy image;
+#     any other prod-* / stag-* tag builds arch-gnome as before
+# One profile per run: a second image would double the runner's disk and
+# wall-clock cost; run the workflow once per profile instead. The package
+# step is profile-independent -- every run tops up the same rolling repo.
+#
 # Package builds are incremental: the job seeds ./repo from the rolling
 # "repo" Release, and pkg/build-pkg.sh skips every PKGBUILD whose version
 # is already present, so a run only pays for what changed. The rolling
@@ -15,6 +23,14 @@ name: build
 
 on:
   workflow_dispatch:
+    inputs:
+      profile:
+        description: "Image profile to build"
+        type: choice
+        options:
+          - arch-gnome
+          - omarchy
+        default: arch-gnome
   push:
     tags:
       - 'prod-*'
@@ -37,6 +53,17 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve image profile
+        id: profile
+        run: |
+          case "$GITHUB_REF_NAME" in
+            prod-omarchy-*|stag-omarchy-*) p=omarchy ;;
+            prod-*|stag-*)                 p=arch-gnome ;;
+            *) p="${{ inputs.profile }}"; p="${p:-arch-gnome}" ;;
+          esac
+          echo "building image profile: $p"
+          echo "profile=$p" >> "$GITHUB_OUTPUT"
 
       - name: Free runner disk space
         run: |
@@ -86,7 +113,7 @@ jobs:
         run: ./build.sh pkg
 
       - name: Build image
-        run: ./build.sh image
+        run: ./build.sh image "${{ steps.profile.outputs.profile }}"
 
       - name: Publish pacman repo to the rolling release
         run: |
@@ -114,7 +141,7 @@ jobs:
         if: "!startsWith(github.ref, 'refs/tags/')"
         uses: actions/upload-artifact@v4
         with:
-          name: image
+          name: image-${{ steps.profile.outputs.profile }}
           path: out/*.img.xz
           retention-days: 14
 
