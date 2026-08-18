@@ -124,8 +124,14 @@ Phase 2 — profiles/omarchy in this repo — DONE 2026-08-18: first
   Verify: image boots to SDDM → Omarchy Hyprland session on device.
 
 Phase 3 — integration pass
-  IMPLEMENTED in the profile 2026-08-18 (edits only; not yet built or
-  booted):
+  DONE 2026-08-18: committed (9698f08 + kernel e06d8f3), built into the
+  v4 image and published to /dist. Kernel + ufw cold-boot verified on
+  device (pkgrel-18 on the v1-era rootfs: ufw.service active at boot,
+  every match autoloaded, zero failed units, SSH survives the limit
+  rule); the services below were verified live on device during the
+  phase; a full v4 flash-boot has not happened yet. CI builds the same
+  image from the prod-omarchy-v0.1.0 tag.
+  The implemented set:
   - services: hooks/70-services.sh enables upstream's
     install/config/enable-services.sh set on top of what it already had
     — systemd-resolved, systemd-oomd, avahi-daemon, cups, cups-browsed,
