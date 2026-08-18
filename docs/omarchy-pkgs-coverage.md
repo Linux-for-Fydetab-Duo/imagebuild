@@ -6,6 +6,10 @@ provides. Availability verified in the aarch64 build container and
 cross-checked against the live device's repos. Companion to
 `pkgbuilds/OMARCHY-VENDOR.md` (the per-package vendoring rationale).
 
+Status: current state accepted as-is (2026-08-18) -- nothing here blocks
+the image. The "Closeable gaps" section below is the deferred work list
+for whenever we want the affected menu entries working.
+
 ## Verdict
 
 Of the 90 upstream packages we do not vendor, 84 are correctly excluded:

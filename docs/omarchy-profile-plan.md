@@ -247,6 +247,10 @@ Phase 5 — CI + release
 
 ## Deferred TODOs
 
+- Menu install-entry gaps (accepted as-is 2026-08-18): 16 buildable
+  aarch64 packages and 13 permanently-x86 entries; the work list and
+  per-package details live in docs/omarchy-pkgs-coverage.md.
+
 - First-boot password change (user-requested 2026-08-18, deferred to
   a later round): the image ships a known password (user and root:
   omarchy) with passwordless-sudo wheel and SDDM autologin — fine on
