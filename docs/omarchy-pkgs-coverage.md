@@ -8,20 +8,21 @@ cross-checked against the live device's repos. Companion to
 
 Status: current state accepted as-is (2026-08-18) -- nothing here blocks
 the image. The "Closeable gaps" section below is the deferred work list
-for whenever we want the affected menu entries working.
+for whenever we want the affected menu entries working. `omazed` was
+closed off that list on 2026-08-19, unblocking the Zed entry.
 
 ## Verdict
 
-Of the 90 upstream packages we do not vendor, 84 are correctly excluded:
+Of the 89 upstream packages we do not vendor, 84 are correctly excluded:
 x86-only proprietary blobs, x86 hardware drivers, the legacy 3.x
 walker/elephant stack, repo-internal tooling, or packages ALARM already
-carries under another name. The real cost is 16 packages that Omarchy's
+carries under another name. The real cost is 15 packages that Omarchy's
 menus can install on x86 but that silently fail here despite being
 buildable for aarch64, plus 13 menu entries that can never work (no
 aarch64 upstream exists) and one broken composite entry (Preinstalls).
 
 Nothing in the base image is missing: `profiles/omarchy/packages.list`
-references none of the 90, and zero of them exist in ALARM under the
+references none of the 89, and zero of them exist in ALARM under the
 same name (omarchy-pkgs exists precisely to carry what Arch does not).
 
 ## Why menu entries fail hard
@@ -35,8 +36,6 @@ user-visible breakage until vendored (or the entry is hidden).
 
 Cheapest first; "vendor" means the same treatment voxtype-bin got.
 
-- `omazed` (arch=any) -- sole blocker of the Zed entry; `zed` itself is
-  in ALARM extra.
 - RetroArch core set: `libretro-cap32-git`, `libretro-fbneo-git`,
   `libretro-vice-git` (10 split pkgs), `libretro-database-git`,
   `retroarch-joypad-autoconfig-git`, plus `libretro-uae-git` (needs

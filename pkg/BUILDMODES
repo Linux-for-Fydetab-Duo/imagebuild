@@ -51,6 +51,7 @@ yaru-icon-theme                noarch
 aether                         noarch
 mise-bin                       noarch
 localsend-bin                  noarch
+omazed                         noarch
 # Compiled target code (Rust/Go/C++), no cross support in their builds.
 ttfx                           emulated
 herdr                          emulated

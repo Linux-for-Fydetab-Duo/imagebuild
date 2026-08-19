@@ -1,6 +1,6 @@
 # Omarchy package vendoring
 
-23 PKGBUILDs copied from https://github.com/omacom-io/omarchy-pkgs at
+24 PKGBUILDs copied from https://github.com/omacom-io/omarchy-pkgs at
 commit 045740e (2026-08-17) for the omarchy profile (see
 docs/omarchy-profile-plan.md). Upstream declares aarch64 in nearly all
 of them but publishes no aarch64 packages (pkgs.omarchy.org has no
@@ -32,6 +32,14 @@ Local changes, kept deliberately minimal:
   model from huggingface.co, unreachable from some networks -- the
   model can be placed manually at
   ~/.local/share/voxtype/models/ggml-base.en.bin (hf-mirror.com works).
+- omazed (added 2026-08-19, verbatim -- no local changes): sole blocker
+  of the Zed menu entry, whose installer runs `omarchy-pkg-add zed
+  omazed` and aborted on that one unresolvable name (`zed` itself is in
+  ALARM extra). arch=any and three bash scripts, so it builds noarch.
+  Kept out of packages.list on purpose: the entry stays menu-driven
+  opt-in, and `zed omazed` resolves to ~1.5 GB installed because zed's
+  Vulkan chain drags in nvidia-utils -- dead weight in a base image for
+  a Mali G610 device.
 
 Deliberately NOT vendored (and why):
 
