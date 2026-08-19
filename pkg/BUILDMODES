@@ -40,6 +40,9 @@ grub-btrfs                     skip
 # Configs, fonts, and prebuilt-aarch64 binary repacks: nothing compiles.
 omarchy                        noarch
 omarchy-settings               noarch
+omarchy-dev                    noarch
+omarchy-settings-dev           noarch
+omarchy-emacs                  noarch
 omarchy-keyring                noarch
 omarchy-nvim                   noarch
 ttf-jetbrains-mono-nerd-basic  noarch
@@ -64,3 +67,4 @@ tensaku                        emulated
 tzupdate                       emulated
 hyprland-preview-share-picker  emulated
 voxtype-bin                    emulated
+sunshine                       emulated

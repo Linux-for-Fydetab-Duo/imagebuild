@@ -41,6 +41,22 @@ Local changes, kept deliberately minimal:
   Vulkan chain drags in nvidia-utils -- dead weight in a base image for
   a Mali G610 device.
 
+- omarchy-dev + omarchy-settings-dev (added 2026-08-19 from upstream
+  @12b322d): the Dev update channel pair. omarchy-dev gets the same
+  bootloader-stack dep strip as our omarchy; omarchy-settings-dev is
+  verbatim (its x86 mkinitcpio drop-ins are already covered by the
+  NoExtract path rules). Menu-driven opt-in, not in packages.list.
+
+- omarchy-emacs (added 2026-08-19 from upstream @12b322d, verbatim):
+  unblocks the Editor > Emacs menu entry; arch=any config scripts over
+  ALARM's emacs-wayland, builds noarch.
+
+- sunshine (added 2026-08-19 from upstream @12b322d): unblocks the
+  Service > Sunshine menu entry. Dropped libmfx from depends -- Intel
+  QSV, absent from ALARM aarch64 and meaningless on RK3588; sunshine
+  builds without it (software encoding). Heavy C++/CMake, builds
+  emulated.
+
 Deliberately NOT vendored (and why):
 
 - walker + elephant stack: only referenced by the legacy 3.x→4.0
