@@ -1,91 +1,102 @@
 # omarchy-pkgs coverage on aarch64
 
-2026-08-18. Audit of upstream https://github.com/omacom-io/omarchy-pkgs
-(114 PKGBUILDs at c2b3796) against what this tree vendors and what ALARM
-provides. Availability verified in the aarch64 build container and
-cross-checked against the live device's repos. Companion to
-`pkgbuilds/OMARCHY-VENDOR.md` (the per-package vendoring rationale).
+2026-08-19 re-audit (supersedes the 2026-08-18 audit). Method: collect
+every package name every `omarchy-pkg-add` call site can install (menu
+actions incl. line-continued and variable-fed lists, bin/ scripts,
+install/ hardware scripts), group them by install transaction, and
+check each NAME against ALARM aarch64 (core/extra/alarm/aur), our
+[fyde] repo, and omarchy-pkgs PKGBUILDs (arch= / source_aarch64).
+Companion: `pkgbuilds/OMARCHY-VENDOR.md`.
 
-Status: current state accepted as-is (2026-08-18) -- nothing here blocks
-the image. The "Closeable gaps" section below is the deferred work list
-for whenever we want the affected menu entries working. `omazed` was
-closed off that list on 2026-08-19, unblocking the Zed entry.
+Upstream binary status: pkgs.omarchy.org publishes NO usable aarch64 —
+the channel repos (stable/edge) 404 for aarch64; a channel-less
+/aarch64/ db exists but contains only omarchy-keyring (checked
+2026-08-19; re-check occasionally, it looks like infrastructure being
+prepared).
 
-## Verdict
+## The lesson that forced the re-audit
 
-Of the 89 upstream packages we do not vendor, 84 are correctly excluded:
-x86-only proprietary blobs, x86 hardware drivers, the legacy 3.x
-walker/elephant stack, repo-internal tooling, or packages ALARM already
-carries under another name. The real cost is 15 packages that Omarchy's
-menus can install on x86 but that silently fail here despite being
-buildable for aarch64, plus 13 menu entries that can never work (no
-aarch64 upstream exists) and one broken composite entry (Preinstalls).
+The 2026-08-18 audit classified by functional substitution ("ALARM has
+zed, the Zed entry is covered"). Wrong layer: `omarchy-pkg-add` is
+`pacman -S` on EXACT names and one unresolvable name aborts the whole
+transaction. `omarchy-install-editor-zed` runs `omarchy-pkg-add zed
+omazed` — zed resolved, omazed did not, entry dead (fixed by vendoring
+omazed, 2026-08-19). Audit by name resolution per transaction, never by
+substitute availability. The same pass found more misses: four
+"mainline" libretro cores are NOT in ALARM, and the ollama, ghostty,
+and bitwarden entries were never checked at all.
 
-Nothing in the base image is missing: `profiles/omarchy/packages.list`
-references none of the 89, and zero of them exist in ALARM under the
-same name (omarchy-pkgs exists precisely to carry what Arch does not).
+## Closeable now — buildable from omarchy-pkgs as-is
 
-## Why menu entries fail hard
+One vendored PKGBUILD each (the omazed treatment), entry fully fixed
+by building:
 
-`omarchy-pkg-add` is `pacman -S --noconfirm --needed` with no AUR
-fallback and a hard per-package check, so one unresolvable name aborts
-the whole menu action. Every package below that a menu references is a
-user-visible breakage until vendored (or the entry is hidden).
+- `sublime-text-4` (bin repack) — Editor > Sublime, also default-editor
+- `visual-studio-code-bin` (bin repack) — Editor > VSCode
+- `openai-codex-desktop` (bin repack) — AI > ChatGPT/Codex desktop
+- `nordvpn-bin` (bin repack) — Service > NordVPN
+- `once-bin` (bin repack) — Service > Once
+- `sunshine` (source build) — Service > Sunshine
+- `omarchy-emacs` (source build) — Editor > Emacs
+- `omarchy-dev` + `omarchy-settings-dev` — Dev update channel (needs
+  the same limine/snapper-dep strip as our vendored `omarchy`)
 
-## Closeable gaps (buildable for aarch64, menu-reachable)
+Note: sublime/vscode/nordvpn repackage proprietary binaries; serving
+them from the public fyde repo means redistributing those blobs
+(upstream does the same for x86; decision recorded when acted on).
 
-Cheapest first; "vendor" means the same treatment voxtype-bin got.
+## Closeable with extra work
 
-- RetroArch core set: `libretro-cap32-git`, `libretro-fbneo-git`,
-  `libretro-vice-git` (10 split pkgs), `libretro-database-git`,
-  `retroarch-joypad-autoconfig-git`, plus `libretro-uae-git` (needs
-  aarch64 added to arch=(), the usual never-widened field). Mainline
-  cores and retroarch itself are all in ALARM -- these six PKGBUILDs
-  unblock the whole Gaming > RetroArch entry.
-- `visual-studio-code-bin`, `sublime-text-4`, `openai-codex-desktop`,
-  `nordvpn-bin`, `once-bin`: all have real source_aarch64 artifacts.
-- `xpadneo-dkms` (arch=any, DKMS): Xbox-controller entry.
-- `omarchy-dev` + `omarchy-settings-dev` (Dev update channel): needs the
-  same limine/snapper-dep strip our vendored `omarchy` PKGBUILD does.
+- Ollama (AI menu): plain `ollama` is in NEITHER ALARM nor
+  omarchy-pkgs. Vendor Arch's ollama PKGBUILD (Go, builds on aarch64).
+- Ghostty (Terminal menu): not in ALARM (zig toolchain); vendor from
+  Arch's PKGBUILD if wanted — medium effort.
+- Xbox controllers: `omarchy-pkg-add linux-headers xpadneo-dkms` —
+  xpadneo-dkms is buildable (arch=any), but `linux-headers` does not
+  exist on ALARM (kernel is linux-aarch64) and is wrong for our kernel
+  anyway. Fix requires linux-fydetab-headers with
+  `provides=(linux-headers)` (pacman resolves virtual -S targets via
+  provider) — verify linux-fydetab builds a headers subpackage first.
+- RetroArch (Gaming menu): ONE transaction of ~40 names. Missing:
+  - from omarchy-pkgs, buildable: `libretro-cap32-git`,
+    `libretro-fbneo-git`, `libretro-vice-git` (10 split pkgs),
+    `libretro-database-git`, `retroarch-joypad-autoconfig-git`;
+    `libretro-uae-git` needs aarch64 added to arch=()
+  - in NEITHER ALARM nor omarchy-pkgs: `libretro-blastem`,
+    `libretro-desmume`, `libretro-kronos`, `libretro-ppsspp` — need
+    AUR-sourced vendoring; blastem is an x86 JIT and likely impossible
+    on aarch64, which would keep the entry broken unless the script's
+    list is patched. Building the easy 6 alone does NOT fix the entry.
 
-## Permanently broken menu entries (no aarch64 upstream)
+## Permanently broken entries (hide-list for omarchy-menu.jsonc)
 
-1password (+cli), cursor-bin, dropbox (+nautilus-dropbox, dropbox-cli),
-grok-bot, heroic-games-launcher-bin, lmstudio-bin, minecraft-launcher,
-spotify, symfony-cli, umu-launcher (Lutris also needs wine-staging,
-absent from ALARM -- dead end regardless). These entries should be
-hidden on this image rather than left to error out; that means patching
-`default/omarchy/omarchy-menu.jsonc`, which we so far ship unmodified.
-Note: symfony-cli and 1password-cli DO publish arm64 artifacts upstream;
-only the omarchy-pkgs PKGBUILDs are x86-limited.
+No aarch64 artifact exists upstream; these menu entries fail hard until
+hidden (we ship the menu unmodified so far):
 
-- The Preinstalls entry (install.preinstalls / remove.preinstalls) is
-  broken by our documented pinta/obsidian/obs-studio drops: one
-  `omarchy-pkg-add` call includes them, so the whole entry fails.
+1password (1password-cli alone IS buildable but shares the failing
+transaction), bitwarden, cursor, dropbox (same pair situation with
+dropbox-cli), grok-bot, LM Studio, Minecraft, Spotify, Steam, Heroic,
+Battle.net + Lutris (umu-launcher/wine-staging absent), symfony-cli
+(upstream publishes arm64; only the omarchy-pkgs PKGBUILD is
+x86-limited — self-vendor if ever wanted), and Preinstalls (pinta is
+x86-only; obsidian/obs-studio also unresolvable — entry needs a script
+patch regardless). Dictation too: our aarch64 voxtype-bin rewrite was
+tested on the device 2026-08-19 and does not work, so it was removed
+from the repo and the entry rejoins this list (see
+pkgbuilds/OMARCHY-VENDOR.md).
 
-## Correctly excluded, for the record
+## Excluded: hardware-gated paths
 
-- Hardware-gated x86 drivers (12): asusctl, intel-ipu7-camera,
-  intel-lpmd, linux-ptl, nvidia bits, tuxedo/dell/macbook/qmk/yt6801
-  drivers -- reached only from hardware-detect paths that never match
-  this device.
-- Legacy 3.x-to-4.0 migrator removals (21): walker, the elephant stack,
-  claude-code, makima-bin, wayfreeze, etc. -- referenced only inside
-  remove_retired_default_packages().
-- Unreferenced by the OS repo (16): bun-bin, crush-bin, cursor-cli,
-  typora, hyprshade, omarchy-fish/zsh, omasnap, omatrack, ... Several
-  ship aarch64 binaries and are cheap to add if ever wanted.
-- ALARM-substituted names already in use: quickshell (vs quickshell-git,
-  ~20 commits behind upstream's pin), localsend-bin, libfprint, ttfx,
-  chromium (vs omarchy-chromium-bin -- but see below), emacs, zed.
+asusctl, dell/tuxedo/framework/apple-t2 drivers, intel
+ipu7/lpmd/ptl/thermald/video-acceleration, supergfxctl, broadcom-wl —
+reached only from hardware-detect paths that never match this device.
+Not counted as breakage.
 
 ## Open flags
 
-- `omarchy-chromium-bin` HAS a real aarch64 prebuilt (Omarchy publishes
-  omarchy-chromium aarch64 release packages, version 148 vs ALARM
-  chromium 151). Decision point: Omarchy patches/branding vs newer base.
-- `omarchy-emacs` installs via yay/AUR, not pacman -- untested whether
-  on-device AUR building works; the Emacs menu entry may or may not work.
-- Vendored `mise-bin` is one release behind upstream (2026.8.6 vs .8).
-- ALARM DBs used for the check were a few days stale; a package added
-  to ALARM this week would not have shown.
+- `omarchy-chromium-bin` has a real aarch64 prebuilt upstream (version
+  lags ALARM chromium). Decision point: Omarchy patches/branding vs
+  newer base.
+- Vendored `mise-bin` trails upstream by one release.
+- ALARM dbs move; a name absent today may appear — re-run the check
+  before acting on any single entry.
