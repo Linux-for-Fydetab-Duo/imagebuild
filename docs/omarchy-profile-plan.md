@@ -281,12 +281,24 @@ Phase 5 — CI + release
   Cheaper middle path if menu-less rollback suffices: btrfs + a script
   generating extlinux entries per snapshot on current U-Boot.
 
-- First-boot password change (user-requested 2026-08-18, deferred to
-  a later round): the image ships a known password (user and root:
-  omarchy) with passwordless-sudo wheel and SDDM autologin — fine on
-  the bench, unacceptable to hand out. Design needed: plain
-  chage -d 0 expiry is invisible under autologin (auth is skipped),
-  so the change must hook the first session instead — candidates: a
-  first-run omarchy provisioning step (upstream has one we dropped),
-  a session-side oneshot prompt, or disabling autologin until the
-  password is rotated.
+- First-boot setup via upstream deferred provisioning (assessed
+  2026-08-19, feasible; supersedes the earlier first-boot password
+  change TODO): official Omarchy's getting-started flow is
+  omarchy-provision-owner.service — armed by
+  /var/lib/omarchy/provisioning/pending, it runs the gum setup form on
+  tty1 before SDDM (keyboard layout, full name, username, password,
+  hostname, timezone), creates the user with the group grants recorded
+  in provisioning/groups, then hands off to SDDM. Its LUKS re-key step
+  self-gates (needs a staged luks-key file AND a crypto_LUKS root), so
+  it no-ops cleanly on our ext4 image. Adoption plan: build the image
+  with NO baked user (mirror `omarchy apply system
+  --defer-provisioning`: hooks record group grants in
+  provisioning/groups instead of usermod), stage the pending marker,
+  install+enable the service, drop SDDM autologin. Side benefit:
+  recorded group grants close the overlay /etc/group membership gap
+  (docs/omarchy-feature-gaps.md Tier 3). To verify before build: our
+  aarch64 omarchy package ships bin/omarchy-provision-owner +
+  install/provisioning/, gum is in the image, and ordering vs our
+  first-boot resizefs service. Constraint: the tty1 form needs a
+  physical keyboard (no on-screen keyboard on a TTY), so the
+  keyboard-dock requirement must be documented — or a fallback kept.
