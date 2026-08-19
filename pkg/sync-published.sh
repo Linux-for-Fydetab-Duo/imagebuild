@@ -69,7 +69,8 @@ is_local() {
 #                        since GitHub sanitizes ':' in asset names.
 #   mesa-panfork-git     pre-panthor stopgap, superseded by mesa/panvk.
 #   python-imageforge    tool of the old imageforge flow this replaced.
-dropped=(grub grub-btrfs mesa-panfork-git python-imageforge)
+#   voxtype-bin          removed 2026-08-19: does not work on the device.
+dropped=(grub grub-btrfs mesa-panfork-git python-imageforge voxtype-bin)
 
 is_dropped() {
     local candidate="$1" n
