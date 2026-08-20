@@ -1,0 +1,16 @@
+sys
+network
+power
+adm
+wheel
+uucp
+optical
+rfkill
+video
+storage
+audio
+users
+nopasswdlogin
+autologin
+docker
+input

@@ -14,13 +14,30 @@ downloads.
 | Profile | Desktop | Release tags | Details |
 |---|---|---|---|
 | [`arch-gnome`](profiles/arch-gnome/README.md) | GNOME (Wayland), tablet-tuned | `prod-*` / `stag-*` | user `arch` |
-| [`omarchy`](profiles/omarchy/README.md) | [Omarchy](https://omarchy.org) 4.0 (Hyprland + Quickshell) | `prod-omarchy-*` / `stag-omarchy-*` | user `omarchy` |
+| [`omarchy`](profiles/omarchy/README.md) | [Omarchy](https://omarchy.org) 4.0 (Hyprland + Quickshell) | `prod-omarchy-*` / `stag-omarchy-*` | first-boot owner setup |
 
 Pushing a release tag makes CI build that profile and attach the image to a
 GitHub Release; the workflow-dispatch `profile` input builds either one
 manually. Every run also tops up the rolling
 [`repo` release](https://github.com/Linux-for-Fydetab-Duo/imagebuild/releases/tag/repo),
 which devices use as their `[fyde]` pacman server.
+
+### First boot (omarchy)
+
+The omarchy image bakes no user account. On the first boot Omarchy's own
+`omarchy-provision-owner` takes tty1 before SDDM and asks for keyboard
+layout, full name, username, password, hostname and timezone; it then
+creates that owner — `wheel` plus the grants staged in
+`/var/lib/omarchy/provisioning/groups` — gives root the same password, and
+hands off to the desktop.
+
+**The form needs a physical keyboard**: the keyboard dock or a USB one.
+tty1 has no on-screen keyboard, and neither does the SDDM greeter that
+follows. The owner is autologged in for that first boot only; a
+self-removing unit drops the autologin the next boot, so every boot after
+the first asks for the password at the greeter. (Upstream keeps autologin
+permanently only where the disk is encrypted and the LUKS passphrase is the
+auth boundary; these images ship unencrypted.)
 
 ## Requirements
 

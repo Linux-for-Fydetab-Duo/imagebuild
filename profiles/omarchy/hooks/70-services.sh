@@ -43,6 +43,13 @@ mask_unit() {
 #   iio-sensor-proxy   has no [Install] section at all -- systemctl cannot
 #                      enable it, a .wants symlink is the only way to force it.
 
+# First-boot owner setup on tty1, ahead of SDDM. The unit file is upstream's,
+# reached through the overlay's /etc/systemd/system symlink into the omarchy
+# package, so package updates track it; only the enablement is ours.
+# omarchy-provision-owner deletes the multi-user.target.wants symlink itself
+# once setup completes.
+enable_unit omarchy-provision-owner.service
+
 # Base system
 enable_unit NetworkManager.service
 enable_unit bluetooth.service

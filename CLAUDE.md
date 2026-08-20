@@ -5,7 +5,8 @@ code in this repository.
 
 Self-contained pipeline that cross-builds aarch64 Arch Linux images for the
 Fydetab Duo tablet on an x86 host (docker + qemu binfmt). Two profiles:
-`arch-gnome` (GNOME/GDM) and `omarchy` (Hyprland/Omarchy, SDDM autologin).
+`arch-gnome` (GNOME/GDM) and `omarchy` (Hyprland/Omarchy, SDDM, no baked
+user — the owner is created by first-boot provisioning).
 Directory map: README.md. Design rationale: docs/build-internals.md.
 
 ## Commands

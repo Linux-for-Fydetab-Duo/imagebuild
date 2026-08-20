@@ -39,7 +39,16 @@
 # CLI snapshot rollback, invoked by hand rather than by a unit.
 /usr/bin/fydetab-snapshot-restore       0    0    755
 
-# No entry for /home/omarchy: this profile puts nothing under /home in the
-# overlay, and perms.list is applied before 02-customize.sh seeds the home
-# directories, so an entry here would fail on a path that does not exist yet.
-# The seeding step creates /home/omarchy and chowns it to 1001:1001 itself.
+# First-boot provisioning state: `pending` arms the tty1 setup form, `groups`
+# lists what the owner account is granted. Modes match what upstream stages.
+# /var and /var/lib are listed for the same reason as /etc and /usr -- the
+# overlay copy stamps its own directory modes onto the rootfs ones.
+/var                                    0    0    755
+/var/lib                                0    0    755
+/var/lib/omarchy/                       0    0    755
+/var/lib/omarchy/provisioning           0    0    755
+/var/lib/omarchy/provisioning/pending   0    0    644
+/var/lib/omarchy/provisioning/groups    0    0    644
+
+# No per-user entry under /home: this profile bakes no user, so the owner's
+# home is created by useradd during first-boot provisioning.
