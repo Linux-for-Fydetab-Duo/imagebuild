@@ -166,8 +166,8 @@ ESP is the UEFI future-proofing decided above.
   Verified on device 2026-08-20 (SD boot): boot.scr found on the EF00
   partition, vfat /boot mounted, resizefs grew p3 and self-disabled.
   U-Boot also reads FAT markedly faster than its ext4 driver
-  (~40 MB of kernel+initramfs in ~3.2 s). Still open: an eMMC-flash
-  boot test, to ride along with Phase 1's device verification.
+  (~40 MB of kernel+initramfs in ~3.2 s). The eMMC-flash boot test is
+  deferred to the final verification gate after all phases.
 
 ## Phase 1 — btrfs root + snapper (omarchy profile) → issue #2
 
@@ -212,7 +212,8 @@ ESP is the UEFI future-proofing decided above.
   Verified 2026-08-20 (SD): exact upstream layout and mount options
   live, early resizefs grew p3 to the medium, omarchy-snapshot
   create works (no more 127), restore drill passed with snapshot
-  history intact and a clean reboot. Still open: the eMMC boot test.
+  history intact and a clean reboot. The eMMC boot test is deferred
+  to the final gate after all phases (decided 2026-08-20).
 
 ## Phase 2 — first-boot provisioning (upstream adoption)
 
