@@ -1,7 +1,7 @@
 # Storage stack plan: split /boot, btrfs + snapper, opt-in LUKS
 
-Status: Phase 0 implemented and device-verified 2026-08-20; Phases
-1-4 agreed, not started. Covers GitHub issues
+Status: Phases 0 and 1 implemented and device-verified 2026-08-20;
+Phases 2-4 agreed, not started. Covers GitHub issues
 #1 (Disk encryption) and #2 (snapshots / rollback / factory reset /
 hibernation). Supersedes the "recoverable subset" half of the
 filesystem feature gap entry in docs/omarchy-profile-plan.md (accepted
@@ -33,7 +33,8 @@ as-is 2026-08-18); the firmware-bound half stays out of scope here.
   (the boot layer stays identical across profiles) but is otherwise
   out of scope from Phase 0 device verification onward.
 - The btrfs subvolume layout mirrors upstream Omarchy exactly
-  (2026-08-20): @/@home/@log top-level, root mounted subvol=/@,
+  (2026-08-20): @/@home/@log/@pkg top-level, root mounted subvol=/@,
+  noatime,compress=zstd mount options,
   .snapshots nested under @ — see "Target layout" for the measured
   sources and the rollback consequence (an @-swap restore helper
   instead of snapper rollback).
@@ -91,9 +92,12 @@ p3  ROOT       omarchy: btrfs (LUKS2 underneath when opted in)
 ```
 
 btrfs subvolumes mirror upstream Omarchy exactly (decided 2026-08-20;
-measured from upstream's own scripts): top-level `@` (/), `@home`
-(/home), `@log` (/var/log) — the set omarchy-system-factory-reset-
-finish:150-151 recreates — with snapper's `.snapshots` and, if
+measured from upstream's own scripts and the omarchy-iso installer):
+top-level `@` (/), `@home` (/home), `@log` (/var/log), `@pkg`
+(/var/cache/pacman/pkg) — the installer's full set (omarchy-iso
+configurator + orchestrator/phases_impl.py; factory-reset-finish
+recreates only @home/@log, so @pkg is created at install, never
+recreated) — with snapper's `.snapshots` and, if
 hibernation ever lands, `swap` nested INSIDE `@` (snapper
 create-config and omarchy-hibernation-setup:57-62 semantics). Root is
 mounted with subvol=/@ exactly like upstream — omarchy-system-
@@ -112,8 +116,11 @@ fstab (omarchy): root by fs UUID (unchanged by later encryption — the
 fs keeps its UUID inside the mapper) with subvol=/@, plus /boot
 (vfat, UUID=<serial>, fmask=0077,dmask=0077 — FAT has no POSIX
 permissions, the umask is what keeps root-only files root-only),
-/home (subvol=/@home), /var/log (subvol=/@log). No /.snapshots entry
-(nested). No compression initially; revisit separately if wanted.
+/home (subvol=/@home), /var/log (subvol=/@log), /var/cache/pacman/pkg
+(subvol=/@pkg). No /.snapshots entry (nested). All btrfs mounts use
+noatime,compress=zstd — the official installer's option set; the
+kernel cmdline carries only rootflags=subvol=/@ like upstream's, the
+rest applies on the fstab remount.
 
 Kernel cmdline: `root=PARTUUID=<p3>` stays even for encrypted
 installs — the initramfs hook probes the device and remaps to
@@ -169,10 +176,16 @@ ESP is the UEFI future-proofing decided above.
   built-in (not =m) so the root mount needs no module. Follow the
   kernel-change rule: local verify before any kernel-repo push.
 - stages/03-image.sh: for ROOT_FS=btrfs, restructure the staged tree
-  into @/, @home/, @log/ (moving /home and /var/log content) and
-  build with `mkfs.btrfs --rootdir --subvol` (rw:@, rw:@home, rw:@log,
-  rw:@/.snapshots for snapper), `-U` for the pre-written fstab, into
-  a file dd'd at the p3 offset.
+  into @/, @home/, @log/, @pkg/ (moving /home, /var/log and
+  /var/cache/pacman/pkg content) and build with `mkfs.btrfs --rootdir
+  --subvol` (rw: each, plus rw:@/.snapshots for snapper), `-U` for
+  the pre-written fstab, into a file dd'd at the p3 offset. Built
+  with --shrink and the partition sized from the actual output:
+  mkfs.btrfs's --rootdir estimator over-reserves (measured ~2.2x on
+  the real tree) and GROWS the file rather than fail, so its result,
+  not du, is authoritative. Consequence: the shrunk root has only
+  chunk-tail free space until grown, so resizefs.service moves to
+  early boot (sysinit, Before=basic.target) on this profile.
 - boot.cmd: rootfstype=btrfs and rootflags=subvol=/@ (omarchy
   profile's copy).
 - Restore helper: a fydetab script mirroring upstream's @-swap flow
@@ -196,6 +209,10 @@ ESP is the UEFI future-proofing decided above.
   rollback drill via the helper (mutate → restore → reboot → state
   restored, /.snapshots carried across); resizefs btrfs branch grows
   the fs; eMMC-flash boot test (carried over from Phase 0).
+  Verified 2026-08-20 (SD): exact upstream layout and mount options
+  live, early resizefs grew p3 to the medium, omarchy-snapshot
+  create works (no more 127), restore drill passed with snapshot
+  history intact and a clean reboot. Still open: the eMMC boot test.
 
 ## Phase 2 — first-boot provisioning (upstream adoption)
 
@@ -301,6 +318,11 @@ recovery, which loses nothing since no user data exists yet).
 
 One phase at a time: implement → build → flash → verify on device →
 commit, before the next (kernel btrfs change additionally follows the
-CLAUDE.md kernel verify-before-push rule). All phases build and
+CLAUDE.md kernel verify-before-push rule). Every phase implementation
+starts from the official Omarchy implementation (local checkout
+~/workspace/omarchy) and mirrors it — configs verbatim where
+possible, scripts modeled on upstream flows — diverging only where
+the U-Boot/no-installer constraints force it, with each divergence
+recorded in this doc. All phases build and
 verify the omarchy profile only; arch-gnome carries the shared Phase
 0 boot layout for parity but is otherwise out of scope.

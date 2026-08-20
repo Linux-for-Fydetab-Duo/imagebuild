@@ -1,0 +1,102 @@
+#!/bin/bash
+# Rolls the system root back to a snapper snapshot by swapping the @ subvolume,
+# the way upstream Omarchy's factory reset does it (bin/omarchy-system-factory-
+# reset). `snapper rollback` cannot be used on this device: it expects the
+# restored subvolume to be booted as the filesystem's default, while boot.scr
+# is compiled into the ESP with rootflags=subvol=/@ and is not regenerated on
+# the device.
+set -euo pipefail
+
+TOP_MNT=/run/fydetab-restore
+NEXT=@restore-next
+snapshots_moved=0
+swap_done=0
+
+fail() {
+  echo "Error: $1" >&2
+  exit 1
+}
+
+cleanup() {
+  if mountpoint -q "$TOP_MNT" 2>/dev/null && ((swap_done == 0)); then
+    # The live snapshot store went into the clone before the swap; put it back
+    # or the running system boots on without /.snapshots.
+    if ((snapshots_moved == 1)); then
+      rmdir "$TOP_MNT/@/.snapshots" 2>/dev/null || true
+      mv -T "$TOP_MNT/$NEXT/.snapshots" "$TOP_MNT/@/.snapshots" || true
+    fi
+    btrfs subvolume delete "$TOP_MNT/$NEXT" >/dev/null 2>&1 || true
+  fi
+  umount "$TOP_MNT" 2>/dev/null || true
+  rmdir "$TOP_MNT" 2>/dev/null || true
+}
+
+if (($# == 0)); then
+  snapper list || true
+  echo
+  echo "Usage: $(basename "$0") <snapshot-number>"
+  echo
+  echo "Clones that snapshot into a new @, keeps the current root as"
+  echo "@omarchy-old-<timestamp>, and takes effect on the next boot."
+  exit 0
+fi
+
+number="$1"
+[[ $number =~ ^[0-9]+$ ]] || fail "'$number' is not a snapshot number"
+((EUID == 0)) || fail "must run as root"
+
+[[ $(findmnt -no FSTYPE /) == btrfs ]] || fail "the root filesystem is not btrfs"
+findmnt -no OPTIONS / | grep -q 'subvol=/@\(,\|$\)' ||
+  fail "the root is not mounted from the @ subvolume"
+
+snapshot="/.snapshots/$number/snapshot"
+[[ -d $snapshot ]] || fail "no snapshot $number -- see: snapper list"
+btrfs subvolume show "$snapshot" >/dev/null 2>&1 ||
+  fail "$snapshot is not a btrfs subvolume"
+
+device=$(findmnt -no SOURCE / | sed 's/\[.*\]//')
+[[ -n $device ]] || fail "could not determine the device behind /"
+
+trap cleanup EXIT
+mkdir -p "$TOP_MNT"
+if ! mountpoint -q "$TOP_MNT"; then
+  mount -o subvolid=5 "$device" "$TOP_MNT" ||
+    fail "could not mount the top level of $device"
+fi
+
+if [[ -e $TOP_MNT/$NEXT ]]; then
+  fail "$NEXT already exists -- an interrupted restore left it behind"
+fi
+
+btrfs subvolume snapshot "$snapshot" "$TOP_MNT/$NEXT" >/dev/null
+
+# A snapshot of @ carries .snapshots only as an empty plain directory (nested
+# subvolumes are not part of a snapshot), so the live snapshot store moves into
+# the clone. A rename stays within the one filesystem, so it crosses the
+# subvolume boundary and works while @ is mounted. -T everywhere below: moving
+# a subvolume INTO a surviving directory instead of over it would hide it.
+if [[ -e $TOP_MNT/$NEXT/.snapshots ]]; then
+  rmdir "$TOP_MNT/$NEXT/.snapshots" ||
+    fail "the snapshot's .snapshots placeholder is not empty"
+fi
+mv -T "$TOP_MNT/@/.snapshots" "$TOP_MNT/$NEXT/.snapshots"
+snapshots_moved=1
+
+# The two renames are the only moment without an @; put the old one back if the
+# second fails, so the machine always has a root to boot.
+old="@omarchy-old-$(date +%s)"
+mv -T "$TOP_MNT/@" "$TOP_MNT/$old"
+if ! mv -T "$TOP_MNT/$NEXT" "$TOP_MNT/@"; then
+  mv -T "$TOP_MNT/$old" "$TOP_MNT/@"
+  fail "could not put the restored root in place; the system is unchanged"
+fi
+swap_done=1
+sync
+
+echo "Restored snapshot $number. Reboot to complete the restore."
+echo
+echo "The previous root is kept as $old. Once the restored system boots, it can"
+echo "be deleted with:"
+echo "  sudo mount -o subvolid=5 $device /mnt"
+echo "  sudo btrfs subvolume delete /mnt/$old"
+echo "  sudo umount /mnt"

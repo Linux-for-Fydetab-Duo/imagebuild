@@ -16,6 +16,7 @@ RUN sed -i '1i Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch' \
         arch-install-scripts \
         pacman-contrib \
         e2fsprogs \
+        btrfs-progs \
         dosfstools \
         mtools \
         gptfdisk \

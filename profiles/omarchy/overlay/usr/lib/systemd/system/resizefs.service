@@ -1,5 +1,12 @@
 [Unit]
 Description=Resize root filesystem
+# Early boot, before basic.target: the image build ships the btrfs root
+# shrunk to its minimum, so until this grows it to the medium the filesystem
+# has only its chunk tails free -- nothing meaningful may write before then.
+DefaultDependencies=no
+After=systemd-remount-fs.service
+Before=basic.target shutdown.target
+Conflicts=shutdown.target
 
 [Service]
 Type=oneshot
@@ -8,4 +15,4 @@ ExecStartPre=/usr/bin/resizefs
 ExecStart=systemctl disable resizefs.service
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=sysinit.target

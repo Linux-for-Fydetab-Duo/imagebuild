@@ -195,7 +195,8 @@ zram-generator
 # ISO installs it separately. It pulls omarchy-settings (the /etc/skel config
 # layer, the SDDM theme and /usr/local/share/wayland-sessions/omarchy.desktop),
 # hyprland, quickshell, uwsm, sddm and omarchy-keyring. Our [fyde] rebuild has
-# the limine/snapper bootloader deps removed (see pkgbuilds/OMARCHY-VENDOR.md).
+# the limine bootloader deps removed, snapper kept (see
+# pkgbuilds/OMARCHY-VENDOR.md).
 omarchy
 
 # ======
@@ -236,6 +237,9 @@ lshw
 e2fsprogs
 parted
 btrfs-progs
+# The root is btrfs with upstream Omarchy's subvolume layout; snapper takes the
+# pre-update snapshots omarchy-snapshot/omarchy-update expect.
+snapper
 # The overlay enables sshd.service; nothing in the Omarchy set pulls openssh.
 openssh
 pipewire-pulse

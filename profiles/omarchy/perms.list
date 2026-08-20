@@ -36,6 +36,9 @@
 /usr/bin/resizefs                       0    0    755
 /usr/bin/oemcleanup                     0    0    755
 
+# CLI snapshot rollback, invoked by hand rather than by a unit.
+/usr/bin/fydetab-snapshot-restore       0    0    755
+
 # No entry for /home/omarchy: this profile puts nothing under /home in the
 # overlay, and perms.list is applied before 02-customize.sh seeds the home
 # directories, so an entry here would fail on a path that does not exist yet.

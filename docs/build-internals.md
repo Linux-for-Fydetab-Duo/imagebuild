@@ -53,7 +53,8 @@ LBA 24580   resource.img   ┘
 p1  FW      64s … 65535s       no filesystem
 p2  ESP     65536s … 1114111s  FAT32   <- 512 MiB, legacy_boot, type ef00;
                                           boot.cmd hardcodes "setenv bootpart 2"
-p3  ROOTFS  1114112s … end     ext4    <- boot.cmd hardcodes "setenv rootpart 3"
+p3  ROOTFS  1114112s … end     btrfs on omarchy, ext4 on arch-gnome
+                                       <- boot.cmd hardcodes "setenv rootpart 3"
 ```
 
 The ESP is mounted at `/boot`: kernel, initramfs, dtb and `boot.scr` sit at its
@@ -61,10 +62,33 @@ filesystem root, and the root filesystem carries `/boot` as an empty mountpoint.
 FAT32 with type `ef00` is what lets a later UEFI firmware boot the same layout
 without repartitioning.
 
+## The root filesystem
+
+`ROOT_FS` in `image.conf` picks it per profile. `arch-gnome` stays on ext4 with
+a single flat tree. `omarchy` is btrfs with upstream Omarchy's subvolume layout,
+so the snapshot and rollback tools that ship in the omarchy packages work
+unchanged:
+
+```
+@ → /      @home → /home      @log → /var/log      @/.snapshots (nested, 0750)
+```
+
+Root is mounted `subvol=/@` (boot.cmd adds `rootflags=subvol=/@`), `/home` and
+`/var/log` get their own fstab lines against the same filesystem UUID, and the
+nested `.snapshots` needs none. Snapshots and CLI rollback:
+`docs/storage-stack-plan.md`.
+
 Stage 3 uses no loop device and no mount: `sgdisk` on a plain file, `dd` for the
-blobs, `mkfs.vfat` plus mtools `mcopy` for the ESP, and `mke2fs -E offset= -d`
-to create and populate the root filesystem in place. That is what makes it work
-inside a container and on a CI runner.
+blobs, `mkfs.vfat` plus mtools `mcopy` for the ESP. ext4 is created and
+populated in place with `mke2fs -E offset= -d`; btrfs has no offset option, so
+`mkfs.btrfs --rootdir … --subvol` builds it as a separate file from a tree
+restructured into `@`/`@home`/`@log` and the file is `dd`'d to the partition
+offset. That is what makes it work inside a container and on a CI runner.
+
+Stage 4's content checks follow the same split: `debugfs` reads the ext4 at its
+offset, while the btrfs side checks the superblock magic in the assembled image
+and reads files out of the filesystem file stage 3 keeps (`btrfs restore
+--path-regex`, since btrfs-progs takes no offset argument either).
 
 ## GPU
 

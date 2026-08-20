@@ -74,6 +74,12 @@ enable_unit linux-modules-cleanup.service
 # writes to cpufreq. Verified on device 2026-08-18.
 enable_unit power-profiles-daemon.service
 
+# Snapshot retention for the btrfs root, mirroring upstream's
+# install/config/snapper.sh: cleanup on, timeline off. snapper-timeline.timer
+# is not touched -- the package ships it disabled, and the shipped
+# /etc/snapper/configs/root sets TIMELINE_CREATE="no" as well.
+enable_unit snapper-cleanup.timer
+
 # Board support (from fydetabduo-post-install)
 enable_unit fydetabduo.service
 enable_unit bluetooth-fydetab.service

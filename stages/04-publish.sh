@@ -59,8 +59,56 @@ for f in "${KERNEL_IMAGE#/boot}" "${KERNEL_INITRAMFS#/boot}" "${KERNEL_DTB#/boot
     fi
 done
 
+if [ "$ROOT_FS" = "btrfs" ]; then
+    echo "==> verifying the btrfs superblock landed at the root partition"
+    # The primary superblock sits 64 KiB into the filesystem, its magic 64 bytes
+    # in. Reading it out of the assembled image is what proves the dd landed on
+    # the partition boundary rather than beside it.
+    magic="$(dd if="$IMG" bs=1 skip=$(( root_offset + 65536 + 64 )) count=8 status=none)"
+    [ "$magic" = "_BHRfS_M" ] \
+        || { echo "!! no btrfs superblock at offset $(( root_offset + 65536 ))" >&2; exit 1; }
+    echo "    ok  _BHRfS_M at offset $(( root_offset + 65536 + 64 ))"
+
+    rootfs_img="$WORK/rootfs-btrfs.img"
+    [ -s "$rootfs_img" ] \
+        || { echo "!! $rootfs_img is missing -- stage 3 must keep it for the checks below" >&2; exit 1; }
+fi
+
+# btrfs restore matches --path-regex against every path it walks, parents
+# included, so the expression has to accept each prefix as well as the file.
+path_regex() {
+    local out='' close='' part
+    local IFS=/
+    for part in $1; do
+        [ -n "$part" ] || continue
+        out="$out(|${close:+/}${part//./\\.}"
+        close="$close)"
+    done
+    printf '^/%s%s$' "$out" "$close"
+}
+
+# One presence test for both root filesystems. debugfs reads the ext4 in place
+# at its partition offset; btrfs-progs takes no offset argument, so the btrfs
+# side reads the separate filesystem file stage 3 kept, where the root's files
+# live under @/.
+rootfs_has() {
+    local path="$1"
+    if [ "$ROOT_FS" = "btrfs" ]; then
+        # -S because restore skips symbolic links without it, and one of the two
+        # mali firmware paths is a symlink to the other. A restored symlink is
+        # dangling on its own, hence the -L arm.
+        local tmp rc=0
+        tmp="$(mktemp -d)"
+        btrfs restore -S --path-regex "$(path_regex "@$path")" "$rootfs_img" "$tmp" >/dev/null 2>&1 || true
+        [ -s "$tmp/@$path" ] || [ -L "$tmp/@$path" ] || rc=1
+        rm -rf "$tmp"
+        return "$rc"
+    fi
+    debugfs -R "stat $path" "$IMG?offset=$root_offset" 2>/dev/null | grep -q "Inode:"
+}
+
 echo "==> verifying fstab inside the root filesystem"
-debugfs -R "stat /etc/fstab" "$IMG?offset=$root_offset" 2>/dev/null | grep -q "Inode:" \
+rootfs_has /etc/fstab \
     || { echo "!! /etc/fstab is missing from the root filesystem" >&2; exit 1; }
 echo "    ok  /etc/fstab"
 
@@ -71,7 +119,7 @@ echo "==> verifying GPU firmware is where panthor looks for it"
 # "Failed to load firmware image 'mali_csffw.bin'".
 for f in /usr/lib/firmware/arm/mali/arch10.8/mali_csffw.bin \
          /usr/lib/firmware/arm/mali/arch10.10/mali_csffw.bin; do
-    if debugfs -R "stat $f" "$IMG?offset=$root_offset" 2>/dev/null | grep -q "Inode:"; then
+    if rootfs_has "$f"; then
         echo "    ok  $f"
     else
         echo "!! $f missing -- the GPU will not init" >&2

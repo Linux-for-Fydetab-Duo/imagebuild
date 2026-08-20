@@ -29,9 +29,11 @@ enforces). Image builds are heavy (CI allots 350 min).
   mkimage output makes it silently fall back to eMMC boot.
 - The ESP must carry the GPT legacy_boot attribute and be partition 2: FAT32,
   holding kernel, initramfs, dtb and boot.scr at its filesystem root (that root
-  is /boot once mounted); the ext4 root is partition 3. The DTB is
-  rk3588s-fydetab_duo.dtb (underscore, not hyphen). stages/04-publish.sh
-  asserts these.
+  is /boot once mounted); the root is partition 3, and its filesystem is
+  per-profile (ROOT_FS in image.conf: btrfs with subvolumes @/@home/@log on
+  omarchy, ext4 on arch-gnome), so boot.cmd's rootfstype/rootflags belong to
+  the profile too. The DTB is rk3588s-fydetab_duo.dtb (underscore, not hyphen).
+  stages/04-publish.sh asserts these.
 - Mali CSF firmware must ride in the initramfs (DRM_PANTHOR=y probes before
   root mounts), listed under BOTH arch10.8 and arch10.10 paths — mkinitcpio
   does not follow the symlink (profiles/*/overlay/etc/mkinitcpio.conf).

@@ -7,6 +7,10 @@
 # filesystem is partition 3. The kernel/initramfs/dtb names MUST match what the
 # linux-fydetab package installs; 02-customize.sh asserts they exist before the
 # image is assembled. Comments are dropped at compile time; they are for humans.
+#
+# This profile's root is btrfs with the system in the @ subvolume, so the
+# cmdline below diverges from profiles/arch-gnome/boot/boot.cmd (ext4, no
+# rootflags); everything else is the same file.
 setenv bootpart 2
 setenv rootpart 3
 # NOTE the underscore: the linux-v6.12 branch names the device tree
@@ -22,7 +26,7 @@ part uuid ${devtype} ${devnum}:${rootpart} root_uuid
 # so the DTS must not carry loglevel/console overrides. tty1 last keeps boot
 # status on the panel; quiet+loglevel=3 hides kernel chatter (vendor dhd wifi
 # logs info at ERROR level) while systemd.show_status keeps per-unit lines.
-setenv bootargs rootfstype=ext4 rootwait rw root=PARTUUID=${root_uuid} console=ttyFIQ0,1500000n8 console=tty1 init=/sbin/init quiet loglevel=3 systemd.show_status=true rd.udev.log_level=3 vt.global_cursor_default=0
+setenv bootargs rootfstype=btrfs rootflags=subvol=/@ rootwait rw root=PARTUUID=${root_uuid} console=ttyFIQ0,1500000n8 console=tty1 init=/sbin/init quiet loglevel=3 systemd.show_status=true rd.udev.log_level=3 vt.global_cursor_default=0
 load ${devtype} ${devnum}:${bootpart} ${kernel_addr_c} ${linux_image}
 load ${devtype} ${devnum}:${bootpart} ${fdt_addr_r} ${fdtfile}
 load ${devtype} ${devnum}:${bootpart} ${ramdisk_addr_r} ${initrd}
