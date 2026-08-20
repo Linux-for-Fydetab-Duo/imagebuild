@@ -62,8 +62,10 @@ EOF
 
 # Expected package filenames for a PKGBUILD, computed on the host: makepkg
 # only exists inside the containers, but the version fields are plain bash.
-# Dynamic pkgver() PKGBUILDs would report the pre-update pkgver here; none of
-# the built packages uses one (mesa-panfork is synced, not built).
+# Dynamic pkgver() PKGBUILDs (the omarchy -dev channel) report the stale
+# baked pkgver here, so their skip decision falls through to makepkg's own
+# already-built check inside the container -- build_one treats that exit (13)
+# as the skip it is.
 expected_pkgs() {
     local src="$1"
     (cd "$src" && bash -c '
@@ -176,7 +178,16 @@ build_one() {
             runuser -u $run_as -- env HOME=/home/$run_as makepkg \
                 ${FORCE:+--force} \
                 $dep_flags --noconfirm --needed --ignorearch --clean
-        "
+        " || {
+        local rc=$?
+        # makepkg E_ALREADY_BUILT: a dynamic pkgver() resolved to a version
+        # that already sits in ./repo -- the incremental skip, one clone late.
+        if [ "$rc" -eq 13 ]; then
+            echo "==> $name is already built at its upstream version, skipping"
+            return 0
+        fi
+        return "$rc"
+    }
 }
 
 repo_add_all() {
