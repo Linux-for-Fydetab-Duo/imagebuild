@@ -26,11 +26,12 @@ enforces). Image builds are heavy (CI allots 350 min).
 
 - boot.scr is compiled by stages/mk-rk-script.py, NOT mkimage: the device's
   rockchip 2017.09 u-boot needs the 0xffffffff size-table terminator; plain
-  mkimage output makes it silently fall back to eMMC boot. (The mkimage line
-  in boot.cmd's header comment is stale.)
-- The ROOTFS partition must carry the GPT legacy_boot attribute and be
-  partition 2; the DTB is rk3588s-fydetab_duo.dtb (underscore, not hyphen).
-  stages/04-publish.sh asserts these.
+  mkimage output makes it silently fall back to eMMC boot.
+- The ESP must carry the GPT legacy_boot attribute and be partition 2: FAT32,
+  holding kernel, initramfs, dtb and boot.scr at its filesystem root (that root
+  is /boot once mounted); the ext4 root is partition 3. The DTB is
+  rk3588s-fydetab_duo.dtb (underscore, not hyphen). stages/04-publish.sh
+  asserts these.
 - Mali CSF firmware must ride in the initramfs (DRM_PANTHOR=y probes before
   root mounts), listed under BOTH arch10.8 and arch10.10 paths — mkinitcpio
   does not follow the symlink (profiles/*/overlay/etc/mkinitcpio.conf).

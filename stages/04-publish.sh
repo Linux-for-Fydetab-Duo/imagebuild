@@ -14,6 +14,7 @@ ROOTFS="$WORK/rootfs"
 source "$PROFILE_DIR/image.conf"
 SECTOR=512
 root_offset=$((PART_ROOT_START * SECTOR))
+esp_offset=$((PART_ESP_START * SECTOR))
 name="$(basename "$IMG" .img)"
 
 mkdir -p "$OUT"
@@ -22,12 +23,14 @@ echo "==> verifying partition table"
 sgdisk -p "$IMG" | sed 's/^/    /'
 sgdisk -p "$IMG" | grep -qE "^ +1 +${PART_FW_START} +${PART_FW_END} .*FW" \
     || { echo "!! partition 1 (FW) is not where image.conf says" >&2; exit 1; }
-sgdisk -p "$IMG" | grep -qE "^ +2 +${PART_ROOT_START} .*ROOTFS" \
-    || { echo "!! partition 2 (ROOTFS) is not where boot.cmd expects it" >&2; exit 1; }
+sgdisk -p "$IMG" | grep -qE "^ +2 +${PART_ESP_START} +${PART_ESP_END} .*ESP" \
+    || { echo "!! partition 2 (ESP) is not where boot.cmd expects it" >&2; exit 1; }
+sgdisk -p "$IMG" | grep -qE "^ +3 +${PART_ROOT_START} .*ROOTFS" \
+    || { echo "!! partition 3 (ROOTFS) is not where boot.cmd expects it" >&2; exit 1; }
 # u-boot's distro scan only considers partitions with the legacy-boot GPT
 # attribute; without it the SD is skipped and the device boots from eMMC.
 sgdisk -A 2:show "$IMG" | grep -q "legacy BIOS bootable" \
-    || { echo "!! ROOTFS lacks the legacy_boot attribute -- u-boot will skip this medium" >&2; exit 1; }
+    || { echo "!! the ESP lacks the legacy_boot attribute -- u-boot will skip this medium" >&2; exit 1; }
 
 echo "==> verifying bootloader blobs landed at their sectors"
 check_blob() {
@@ -44,15 +47,22 @@ check_blob "$PROFILE_DIR/firmware/idblock.bin"  "$UBOOT_IDBLOCK_LBA"
 check_blob "$PROFILE_DIR/firmware/uboot.img"    "$UBOOT_IMG_LBA"
 check_blob "$PROFILE_DIR/firmware/resource.img" "$UBOOT_RESOURCE_LBA"
 
-echo "==> verifying boot files inside the filesystem"
-for f in "$KERNEL_IMAGE" "$KERNEL_INITRAMFS" "$KERNEL_DTB" /boot/boot.scr /etc/fstab; do
-    if debugfs -R "stat $f" "$IMG?offset=$root_offset" 2>/dev/null | grep -q "Inode:"; then
+echo "==> verifying boot files inside the ESP"
+# The ESP's filesystem root is /boot once mounted, so image.conf's rootfs-tree
+# paths lose that prefix here.
+for f in "${KERNEL_IMAGE#/boot}" "${KERNEL_INITRAMFS#/boot}" "${KERNEL_DTB#/boot}" /boot.scr; do
+    if mdir -i "$IMG@@$esp_offset" "::$f" >/dev/null 2>&1; then
         echo "    ok  $f"
     else
-        echo "!! $f is missing from the root filesystem" >&2
+        echo "!! $f is missing from the ESP -- u-boot would not find it" >&2
         exit 1
     fi
 done
+
+echo "==> verifying fstab inside the root filesystem"
+debugfs -R "stat /etc/fstab" "$IMG?offset=$root_offset" 2>/dev/null | grep -q "Inode:" \
+    || { echo "!! /etc/fstab is missing from the root filesystem" >&2; exit 1; }
+echo "    ok  /etc/fstab"
 
 echo "==> verifying GPU firmware is where panthor looks for it"
 # Shipped by linux-firmware-other: arch10.8 is a symlink to ../arch10.10/.

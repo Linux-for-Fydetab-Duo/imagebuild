@@ -50,13 +50,21 @@ LBA 64      idblock.bin    ┐
 LBA 16384   uboot.img      ├ inside partition 1, which reserves the region
 LBA 24580   resource.img   ┘
 
-p1  FW      64s … 65535s    no filesystem
-p2  ROOTFS  65536s … end    ext4     <- boot.cmd hardcodes "setenv rootpart 2"
+p1  FW      64s … 65535s       no filesystem
+p2  ESP     65536s … 1114111s  FAT32   <- 512 MiB, legacy_boot, type ef00;
+                                          boot.cmd hardcodes "setenv bootpart 2"
+p3  ROOTFS  1114112s … end     ext4    <- boot.cmd hardcodes "setenv rootpart 3"
 ```
 
+The ESP is mounted at `/boot`: kernel, initramfs, dtb and `boot.scr` sit at its
+filesystem root, and the root filesystem carries `/boot` as an empty mountpoint.
+FAT32 with type `ef00` is what lets a later UEFI firmware boot the same layout
+without repartitioning.
+
 Stage 3 uses no loop device and no mount: `sgdisk` on a plain file, `dd` for the
-blobs, and `mke2fs -E offset= -d` to create and populate the filesystem in
-place. That is what makes it work inside a container and on a CI runner.
+blobs, `mkfs.vfat` plus mtools `mcopy` for the ESP, and `mke2fs -E offset= -d`
+to create and populate the root filesystem in place. That is what makes it work
+inside a container and on a CI runner.
 
 ## GPU
 
