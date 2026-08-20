@@ -307,6 +307,19 @@ Phase 5 — CI + release
   Caveat either way: kernel+initramfs live on the FAT ESP outside the
   snapshots, so a rollback never rolls back the kernel — official
   Omarchy keeps them inside btrfs where snapshots capture them.
+- Vendor U-Boot + UEFI investigation (queued 2026-08-20): find how
+  CrOS builds this U-Boot (the shipped blobs are the rockchip 2017.09
+  vendor set, origin in firmware/PROVENANCE.md), then probe whether
+  rebuilding it with EFI_LOADER enabled could boot Limine directly —
+  a third firmware option besides the mainline-U-Boot port and
+  EDK2-rk3588 above. Open questions: does the vendor tree carry
+  EFI_LOADER at all, and is 2017.09's EFI implementation complete
+  enough for Limine.
+- Recovery mode shows no screen output on our U-Boot (queued
+  2026-08-20): the vendor blob's Power+VolUp recovery runs blind —
+  suspected missing picture resources. Compare our resource.img
+  (written at UBOOT_RESOURCE_LBA by stages/03-image.sh) against the
+  FydeOS image's to find what the recovery UI expects.
 
 - First-boot setup via upstream deferred provisioning (assessed
   2026-08-19, feasible; supersedes the earlier first-boot password
