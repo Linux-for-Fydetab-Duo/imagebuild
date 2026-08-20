@@ -6,7 +6,7 @@ _kernel=linux-fydetab
 pkgbase=$_kernel
 pkgname=("${pkgbase}-headers" $pkgbase)
 pkgver=6.12.43
-pkgrel=18
+pkgrel=19
 arch=('aarch64')
 license=('GPL2')
 url="https://github.com/Linux-for-Fydetab-Duo/linux-fydetabduo"
@@ -76,6 +76,12 @@ build() {
   # missing helper as a modprobe shim instantly fixed autoload.
   ./scripts/config -d STATIC_USERMODEHELPER
 
+  # The omarchy profile's root filesystem is btrfs, so btrfs must be built in
+  # rather than modular: the root is mounted before any module can be loaded
+  # from it. olddefconfig below resolves what BTRFS_FS selects (RAID6_PQ,
+  # XOR_BLOCKS, the zstd/lzo/zlib and crc32c helpers).
+  ./scripts/config -e BTRFS_FS
+
   # fydetabduo_defconfig ships with CONFIG_RD_ZSTD off, but mkinitcpio (the
   # fyde build and stock >=30 alike) compresses the initramfs with zstd by
   # default. The kernel then silently drops the initramfs at boot
@@ -127,6 +133,7 @@ build() {
   grep -q "^CONFIG_STATIC_USERMODEHELPER=y" .config && { echo "STATIC_USERMODEHELPER still on"; exit 1; }
   grep -q "^CONFIG_NETFILTER_XT_MATCH_HL=m" .config || { echo "XT_MATCH_HL did not take"; exit 1; }
   grep -q "^CONFIG_IP6_NF_MATCH_RT=m" .config || { echo "IP6_NF_MATCH_RT did not take"; exit 1; }
+  grep -q "^CONFIG_BTRFS_FS=y" .config || { echo "BTRFS_FS did not take"; exit 1; }
 
   make ${MAKEFLAGS} prepare
   make -s kernelrelease > version
