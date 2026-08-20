@@ -13,7 +13,7 @@ pkgname='omarchy'
 _tag=''
 _commit='f0020448ca87329199de7cb12f2015ebc4a3e5e7'
 pkgver=4.0.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Beautiful, modern, and opinionated Arch Linux by DHH'
 arch=('any')
 url='https://github.com/basecamp/omarchy'
@@ -31,11 +31,13 @@ depends=(
   # from the same _commit, and forces the pair to upgrade together.
   "omarchy-settings=${pkgver}"
 
-  # Upstream's bootloader stack (limine, limine-mkinitcpio-hook,
-  # limine-snapper-sync, snapper) is dropped on this device: it boots
-  # U-Boot into an ext4 rootfs, so UEFI/Limine/Btrfs-snapshot machinery
-  # cannot work. The related config drop-ins these packages would consume
-  # are inert without them.
+  # Upstream's Limine stack (limine, limine-mkinitcpio-hook,
+  # limine-snapper-sync) is dropped on this device: it boots U-Boot, not
+  # UEFI, so a boot menu with per-snapshot entries cannot work and the
+  # config drop-ins those packages would consume are inert. Snapper itself
+  # stays -- the root is btrfs, omarchy-snapshot creates snapshots through
+  # it, and rollback is the CLI restore helper instead of the boot menu.
+  'snapper'
 
   # Wayland / Hyprland core
   'hyprland'

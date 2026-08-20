@@ -8,9 +8,12 @@ aarch64 tree), so they are built here into the [fyde] repo.
 
 Local changes, kept deliberately minimal:
 
-- omarchy/PKGBUILD: dropped the bootloader-stack deps (limine,
-  limine-mkinitcpio-hook, limine-snapper-sync, snapper) — this device
-  boots U-Boot into ext4; UEFI/Limine/Btrfs snapshots cannot work.
+- omarchy/PKGBUILD: dropped the Limine deps (limine,
+  limine-mkinitcpio-hook, limine-snapper-sync) — this device boots
+  U-Boot, not UEFI, so a boot menu with per-snapshot entries cannot
+  work. `snapper` was dropped with them until the omarchy profile's
+  root became btrfs, and is now kept: snapshots are taken through it
+  and rolled back from the CLI (`fydetab-snapshot-restore`).
 - tensaku, tzupdate, hyprland-preview-share-picker: added aarch64 to
   arch=() — all three are plain Rust source builds with no
   arch-specific code; upstream just never widened the field.
@@ -36,10 +39,11 @@ Local changes, kept deliberately minimal:
   a Mali G610 device.
 
 - omarchy-dev + omarchy-settings-dev (added 2026-08-19 from upstream
-  @12b322d): the Dev update channel pair. omarchy-dev gets the same
-  bootloader-stack dep strip as our omarchy; omarchy-settings-dev is
-  verbatim (its x86 mkinitcpio drop-ins are already covered by the
-  NoExtract path rules). Menu-driven opt-in, not in packages.list.
+  @12b322d): the Dev update channel pair. omarchy-dev drops all four
+  bootloader-stack deps, snapper included — it is menu-driven opt-in
+  and not in packages.list, so it never provides the image's snapper;
+  omarchy-settings-dev is verbatim (its x86 mkinitcpio drop-ins are
+  already covered by the NoExtract path rules).
 
 - omarchy-emacs (added 2026-08-19 from upstream @12b322d, verbatim):
   unblocks the Editor > Emacs menu entry; arch=any config scripts over
