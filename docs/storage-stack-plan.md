@@ -268,7 +268,10 @@ is bound by the image-sized partition (~11 GiB — resizefs stands
 down until the question is answered), NOT the medium, so eMMC would
 be faster, not slower; the late-opt-in path is the medium-sized slow
 one. Known-good on the branch: decline path (verified end to end),
-accept path (conversion, key wipe, mapper boot — verified 2026-08-20).
+accept path (verified 2026-08-20: LUKS2 aes-xts/argon2id container,
+7m24s measured in-initramfs conversion on the 64 GB SD, key wiped,
+partition+mapping grown by the hook, mapper-aware resizefs grew the
+fs to the medium, autologin retained per the encrypted posture).
 Open design work for re-entry: the one-secret flow (account password
 as the LUKS passphrase, verified against the shadow hash) is designed
 but unimplemented; a smoother delivery (e.g. conversion without the
