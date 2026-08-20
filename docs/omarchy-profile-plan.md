@@ -368,12 +368,19 @@ Phase 5 — CI + release
   HIBERNATION=y (kernel rebuild; the FydeOS twin config ships it off
   too), a non-zram swapfile, and resume arguments the fixed boot.scr
   cannot carry per-machine — plus the RK3588 BSP suspend/resume risk.
-- Suspend wake policy (measured 2026-08-20): the dhd Wi-Fi driver
-  arms wake-on-WLAN, so any directed frame wakes deep suspend while
+- Suspend wake policy (measured 2026-08-20; QUEUED 2026-08-20: the
+  user finds the WLAN wake annoying — remove Wi-Fi from the wake
+  sources so suspend-while-connected sticks): the dhd driver arms
+  wake-on-WLAN, so any directed frame wakes deep suspend while
   associated (woke in 2 s under live ssh traffic; slept indefinitely
-  with the radio off), and the RTC cannot wake the device from deep
-  suspend (rtcwake alarm never fired). Tuning the dhd wake filter is
-  BSP work if suspend-while-connected should stick.
+  with the radio off). Known-dead end: the config.txt magic-pattern
+  filter did not stop unicast wakes. Levers to try, cheapest first:
+  power/wakeup=disabled on the WLAN device via udev rule; if the wake
+  rides the PCIe intc instead (BL31 arms INTID 282 = fe190000.pcie),
+  a dhd module/wowl setting or BSP wake-filter work. Verify each with
+  the BL31 `IRQ_EN:` serial list and an associated-idle suspend soak.
+  Related fact: the RTC cannot wake the device from deep suspend
+  (rtcwake alarm never fired), so no alarm-based wakeups either way.
 - arch-gnome resizefs shares the first-boot partx/boot.mount race
   (found 2026-08-20 on the omarchy eMMC first boot: the partition
   re-read flaps the ESP device node and systemd drops a mounted
