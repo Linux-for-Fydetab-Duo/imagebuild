@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+build() {
+    # dm-crypt, dm-mod, xts and the arm64 AES implementations are built into
+    # linux-fydetab, so nothing has to be pulled in for them. The FAT driver and
+    # its character tables are modules, and the filesystems hook explicitly
+    # filters nls out of what it adds, so the ESP the staged passphrase lives on
+    # would otherwise be unmountable here. codepage 437 and iso8859-1 are the
+    # kernel's compiled-in vfat defaults, which is what a bare `mount -t vfat`
+    # asks for.
+    map add_module 'vfat' 'fat' 'nls_cp437' 'nls_iso8859-1'
+
+    add_binary 'cryptsetup'
+    add_binary 'sfdisk'
+    add_binary 'partx'
+
+    # 11-dm-initramfs.rules is deliberately absent: it ships with lvm2, which
+    # this image does not install. The notify rule is the one that matters --
+    # libdevmapper waits on the cookie it releases.
+    map add_udev_rule \
+        '10-dm.rules' \
+        '13-dm-disk.rules' \
+        '95-dm-notify.rules'
+
+    # cryptsetup calls pthread_create(), which dlopen()s libgcc_s.so.1
+    add_binary '/usr/lib/libgcc_s.so.1'
+
+    # cryptsetup loads the legacy provider which is required for whirlpool
+    add_binary '/usr/lib/ossl-modules/legacy.so'
+
+    add_runscript
+}
+
+help() {
+    cat <<HELPEOF
+This hook carries out the FydeTab Duo's opt-in disk encryption, so that one
+compiled boot.scr serves both a plaintext and an encrypted install.
+
+It looks for a passphrase staged by fydetab-encrypt-setup at
+/fydetab-encrypt.key on the ESP (partition 2 of the disk the root partition is
+on). With that file present it converts the root partition in place with
+'cryptsetup reencrypt --encrypt --reduce-device-size 64M', resuming an
+interrupted conversion when the LUKS2 header says one is pending, then grows
+the partition to the medium, resizes the mapping and wipes the staged key.
+
+Without a staged key it prompts for the passphrase if the root partition is a
+LUKS container, and does nothing at all if it is not. In every case root= is
+remapped to /dev/mapper/root only once that mapping really exists.
+HELPEOF
+}
+
+# vim: set ft=sh ts=4 sw=4 et:

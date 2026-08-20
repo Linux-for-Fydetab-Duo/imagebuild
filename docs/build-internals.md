@@ -78,6 +78,19 @@ Root is mounted `subvol=/@` (boot.cmd adds `rootflags=subvol=/@`), `/home` and
 nested `.snapshots` needs none. Snapshots and CLI rollback:
 `docs/storage-stack-plan.md`.
 
+An `omarchy` root can also sit under LUKS2, chosen on the device at first boot
+rather than at build time. The `fydetab-crypt` mkinitcpio hook
+(`overlay/etc/initcpio/{install,hooks}/fydetab-crypt`, between the `block` and
+`filesystems` hooks) is the only thing that knows which it is: `boot.scr` is
+compiled into the ESP and always passes `root=PARTUUID=<p3>`, so the hook probes
+that partition, unlocks it and reassigns `root=/dev/mapper/root`. `init`
+resolves `$root` only after the hooks have run, and it sources them into its own
+shell, so the reassignment sticks — that is what lets one image serve both cases
+with no on-device `boot.scr` regeneration. fstab needs no variant either: the
+filesystem UUID is unchanged inside the mapper. The same hook performs the
+conversion itself, and grows the partition afterwards, when
+`fydetab-encrypt-setup` has staged a passphrase on the ESP.
+
 Stage 3 uses no loop device and no mount: `sgdisk` on a plain file, `dd` for the
 blobs, `mkfs.vfat` plus mtools `mcopy` for the ESP. ext4 is created and
 populated in place with `mke2fs -E offset= -d`; btrfs has no offset option, so

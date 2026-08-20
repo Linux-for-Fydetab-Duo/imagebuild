@@ -1,0 +1,191 @@
+#!/bin/bash
+# Asks on tty1, right after first-boot provisioning, whether to encrypt the
+# disk, and stages what the fydetab-crypt initramfs hook needs to do it on the
+# next boot. Run once by fydetab-encrypt-setup.service; also runnable by hand.
+set -euo pipefail
+
+MARKER_DIR=/var/lib/fydetab
+MARKER="$MARKER_DIR/encrypt-offered"
+KEYFILE=/boot/fydetab-encrypt.key
+HEADROOM_MIB=64
+MIN_PASSPHRASE=6
+PADDING="0 0 0 2"
+
+passphrase=""
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0")
+
+Offers to encrypt this device's root filesystem with LUKS2, then reboots: the
+conversion runs from the initramfs, where nothing has the filesystem open.
+
+The passphrase is asked for at every boot, before the desktop exists, so it
+needs a physical keyboard -- the keyboard dock or a USB one. There is no
+on-screen keyboard that early.
+
+Running this by hand after the first boot works, but the filesystem has grown
+to fill the medium by then and the conversion has to process all of it, which
+takes considerably longer than the image-sized filesystem it would have
+processed at first boot.
+EOF
+}
+
+say() {
+  gum style --padding "$PADDING" "$@"
+}
+
+screen() {
+  printf '\033[H\033[2J'
+}
+
+notice() {
+  echo
+  gum spin --spinner pulse --title "$1" -- sleep 2
+}
+
+root_source() {
+  findmnt -no SOURCE / | sed 's/\[.*//'
+}
+
+# True once the root is a dm-crypt mapping, or sits directly on a LUKS
+# container that simply is not open yet.
+already_encrypted() {
+  local src
+  src=$(root_source)
+  [[ -n $src ]] || return 1
+  [[ $src == /dev/mapper/* ]] && return 0
+  [[ $(blkid -o value -s TYPE "$src" 2>/dev/null) == crypto_LUKS ]]
+}
+
+mark_offered() {
+  mkdir -p "$MARKER_DIR"
+  : >"$MARKER"
+}
+
+ask_encrypt() {
+  screen
+  say --foreground 6 "Disk encryption"
+  echo
+  say "Encryption keeps everything on this tablet unreadable to whoever ends"
+  say "up holding it. The passphrase is asked for at EVERY boot, before the"
+  say "desktop starts, so it needs the keyboard dock or a USB keyboard --"
+  say "there is no on-screen keyboard that early."
+  echo
+  gum confirm --affirmative "Encrypt the disk" \
+    --negative "Leave it unencrypted" "Encrypt this device?"
+}
+
+# Esc and Ctrl+C are the only ways out of a gum widget; here they mean "back to
+# the question", so a mistyped answer is not a one-way door.
+collect_passphrase() {
+  local first second
+  while true; do
+    first=$(gum input --password --prompt "Passphrase> " \
+      --prompt.foreground="#845DF9" \
+      --placeholder "Asked for at every boot") || return 1
+    second=$(gum input --password --prompt "Confirm> " \
+      --prompt.foreground="#845DF9" \
+      --placeholder "Must match the passphrase you just typed") || return 1
+
+    if ((${#first} < MIN_PASSPHRASE)); then
+      notice "The passphrase needs at least $MIN_PASSPHRASE characters"
+    elif [[ $first != "$second" ]]; then
+      notice "The passphrases didn't match"
+    else
+      passphrase=$first
+      return 0
+    fi
+  done
+}
+
+decline() {
+  mark_offered
+  screen
+  say "Leaving the disk unencrypted."
+  echo
+  # resizefs.service stood down this boot so the question could be answered
+  # before the filesystem grew. With the answer in, run it now rather than
+  # making the owner reboot to get their free space.
+  gum spin --spinner pulse --title "Preparing storage..." -- \
+    systemctl start resizefs.service ||
+    say --foreground 1 "Storage setup failed -- run 'sudo systemctl start resizefs.service'."
+}
+
+accept() {
+  screen
+  say "Making room for the encryption header..."
+  if ! btrfs filesystem resize "-${HEADROOM_MIB}M" / >/dev/null; then
+    say --foreground 1 "Could not free ${HEADROOM_MIB} MiB; the disk is unchanged."
+    exit 1
+  fi
+
+  # cryptsetup reads a key file as raw bytes and a newline does not terminate
+  # it, while the boot prompt reads up to the first newline and drops it. A
+  # trailing newline here would register a passphrase nobody could ever type, so
+  # write the exact characters and nothing else. /boot is vfat with fmask=0077,
+  # which is what keeps this file root-only until the initramfs wipes it.
+  printf '%s' "$passphrase" >"$KEYFILE"
+  sync
+
+  # Upstream keeps SDDM autologin on encrypted installs, where the LUKS prompt
+  # is the auth boundary (bin/omarchy-provision-owner's configure_login).
+  # Provisioning staged the one-boot autologin cleanup because the disk was
+  # still plaintext when it ran; take it back out.
+  rm -f /etc/systemd/system/graphical.target.wants/omarchy-provision-autologin-once.service \
+    /etc/systemd/system/omarchy-provision-autologin-once.service
+  systemctl daemon-reload 2>/dev/null || true
+
+  mark_offered
+  sync
+
+  screen
+  say --foreground 6 "Encrypting on the next boot"
+  echo
+  say "The tablet reboots now and converts the disk before the desktop starts."
+  say "Leave it powered and plugged in until it finishes; if it is interrupted"
+  say "it picks up where it stopped on the following boot."
+  echo
+  notice "Rebooting"
+  exec systemctl reboot
+}
+
+case "${1:-}" in
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  "") ;;
+  *)
+    usage >&2
+    exit 1
+    ;;
+esac
+
+if ((EUID != 0)); then
+  echo "Error: $(basename "$0") must run as root" >&2
+  exit 1
+fi
+
+# Nothing to offer on a disk that is already encrypted -- including the boot
+# right after a conversion, where this would otherwise ask a second time.
+if already_encrypted; then
+  mark_offered
+  exit 0
+fi
+
+export GUM_CONFIRM_PROMPT_FOREGROUND="6"
+export GUM_CONFIRM_SELECTED_FOREGROUND="0"
+export GUM_CONFIRM_SELECTED_BACKGROUND="2"
+export GUM_CONFIRM_UNSELECTED_FOREGROUND="7"
+export GUM_CONFIRM_UNSELECTED_BACKGROUND="0"
+
+while true; do
+  if ! ask_encrypt; then
+    decline
+    exit 0
+  fi
+  if collect_passphrase; then
+    accept
+  fi
+done

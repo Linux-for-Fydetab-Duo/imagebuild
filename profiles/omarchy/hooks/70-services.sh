@@ -50,6 +50,10 @@ mask_unit() {
 # once setup completes.
 enable_unit omarchy-provision-owner.service
 
+# The encryption question, on the same tty1 straight after the owner exists.
+# Ordered After= it and gated by its own marker, so it asks exactly once.
+enable_unit fydetab-encrypt-setup.service
+
 # Base system
 enable_unit NetworkManager.service
 enable_unit bluetooth.service

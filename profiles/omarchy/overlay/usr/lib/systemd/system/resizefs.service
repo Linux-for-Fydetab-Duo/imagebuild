@@ -3,10 +3,20 @@ Description=Resize root filesystem
 # Early boot, before basic.target: the image build ships the btrfs root
 # shrunk to its minimum, so until this grows it to the medium the filesystem
 # has only its chunk tails free -- nothing meaningful may write before then.
+#
+# Except while the encryption question is still open. Converting a grown root
+# means reencrypting the whole medium instead of the image-sized filesystem, so
+# the unit stands down until first-boot provisioning is done and no passphrase
+# is staged for the initramfs. A unit held back by a condition stays enabled:
+# fydetab-encrypt-setup starts it once the owner declines, and the conversion
+# boot reaches it after the initramfs has consumed the staged key.
 DefaultDependencies=no
 After=systemd-remount-fs.service
 Before=basic.target shutdown.target
 Conflicts=shutdown.target
+RequiresMountsFor=/boot
+ConditionPathExists=!/var/lib/omarchy/provisioning/pending
+ConditionPathExists=!/boot/fydetab-encrypt.key
 
 [Service]
 Type=oneshot

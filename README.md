@@ -33,11 +33,32 @@ hands off to the desktop.
 
 **The form needs a physical keyboard**: the keyboard dock or a USB one.
 tty1 has no on-screen keyboard, and neither does the SDDM greeter that
-follows. The owner is autologged in for that first boot only; a
-self-removing unit drops the autologin the next boot, so every boot after
-the first asks for the password at the greeter. (Upstream keeps autologin
-permanently only where the disk is encrypted and the LUKS passphrase is the
-auth boundary; these images ship unencrypted.)
+follows.
+
+### Disk encryption (omarchy, optional)
+
+Straight after the owner form, on the same tty1, the image asks whether to
+encrypt the disk. Declining costs nothing: the root filesystem is expanded
+to fill the medium and the boot carries on.
+
+Accepting stages the passphrase and reboots. The next boot converts the
+root partition in place — LUKS2, `cryptsetup reencrypt --encrypt` — from
+the initramfs, where nothing has the filesystem open yet, then grows it to
+the medium and wipes the staged passphrase. It takes a few minutes, because
+the filesystem is still image-sized at that point. If power is cut in the
+middle, the following boot resumes the conversion where it stopped.
+
+**An encrypted device asks for the passphrase at every boot**, from the
+initramfs, where only a physical keyboard works — the same dock or USB
+keyboard the setup form needed. Because that passphrase is then the
+authentication boundary, encrypted installs keep the desktop autologin,
+which is upstream Omarchy's posture. Unencrypted ones autologin for the
+first boot only: a self-removing unit drops it before the next boot, so
+every later boot asks for the password at the greeter.
+
+Encryption can also be turned on later with `sudo fydetab-encrypt-setup`.
+That works, but the filesystem fills the medium by then and the conversion
+has to process all of it, which takes considerably longer.
 
 ## Requirements
 

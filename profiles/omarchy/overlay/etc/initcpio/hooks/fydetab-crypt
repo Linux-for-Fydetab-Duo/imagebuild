@@ -1,0 +1,156 @@
+#!/usr/bin/ash
+
+# Opt-in LUKS2 for the FydeTab Duo. boot.scr is compiled into the ESP and always
+# passes root=PARTUUID=<p3>, so this hook is what lets one image serve both a
+# plaintext and an encrypted install: it probes the root partition and remaps
+# root to /dev/mapper/root only once that mapping really exists. Every path that
+# does not reach a mapping leaves root untouched, so a plaintext install boots
+# exactly as it would without the hook.
+
+# Kernel name of a partition -> kernel name of the disk holding it.
+fydetab_disk_of() {
+    local syspath
+    syspath=$(readlink -f "/sys/class/block/$1") || return 1
+    [ -f "$syspath/partition" ] || return 1
+    syspath=${syspath%/*}
+    echo "${syspath##*/}"
+}
+
+# Disk kernel name + partition number -> device node. Read out of sysfs rather
+# than spelled out, because the separator differs per driver (mmcblk1p2 vs sda2).
+fydetab_part_dev() {
+    local entry name
+    for entry in "/sys/class/block/$1"/*/partition; do
+        [ -f "$entry" ] || continue
+        [ "$(cat "$entry")" = "$2" ] || continue
+        name=${entry%/partition}
+        echo "/dev/${name##*/}"
+        return 0
+    done
+    return 1
+}
+
+# $1 root partition, $2 disk, $3 partition number, $4 staged key file.
+fydetab_convert() {
+    local dev="$1" disk="$2" partnum="$3" key="$4"
+
+    # </dev/null rather than --batch-mode: cryptsetup only prints progress when
+    # batch mode is off, and its confirmations all go through yesDialog(), which
+    # answers itself with "yes" whenever stdin is not a terminal. This way the
+    # conversion runs unattended AND shows how far along it is.
+    if cryptsetup isLuks "$dev" >/dev/null 2>&1; then
+        echo ":: fydetab-crypt: resuming disk encryption -- do not power off"
+        # LUKS2 keeps the whole reencryption state in its own header, so a
+        # resume takes no parameters beyond the passphrase; passing the
+        # initialization options again is what it must not do. --resume-only
+        # fails when nothing is pending, which is the conversion-finished-but-
+        # key-not-wiped case, and that falls through to the open below.
+        cryptsetup reencrypt --resume-only --progress-frequency 5 \
+            --key-file "$key" "$dev" </dev/null ||
+            echo ":: fydetab-crypt: no reencryption left to resume"
+    else
+        echo ":: fydetab-crypt: encrypting the disk -- do not power off"
+        cryptsetup reencrypt --encrypt --reduce-device-size 64M \
+            --progress-frequency 5 --key-file "$key" "$dev" </dev/null ||
+            err "fydetab-crypt: the conversion did not finish"
+    fi
+
+    # No header means the conversion never started: the partition is still
+    # plaintext and boots from root= as it stands.
+    cryptsetup isLuks "$dev" >/dev/null 2>&1 || return 1
+
+    # An unfinished reencryption is recorded in the LUKS2 header. Refuse the
+    # boot rather than run a system on a half-converted disk: the staged key is
+    # still here, so the next boot picks up where this one stopped.
+    if cryptsetup luksDump "$dev" 2>/dev/null | grep -q 'online-reencrypt'; then
+        err "fydetab-crypt: the conversion is unfinished -- reboot to resume it"
+        return 1
+    fi
+
+    if ! cryptsetup open --key-file "$key" "$dev" root </dev/null; then
+        err "fydetab-crypt: the staged key does not open the encrypted root"
+        return 1
+    fi
+    export root='/dev/mapper/root'
+
+    # The image is flashed at its own size, so the partition still ends where
+    # the image did. Grow it and the mapping here, while the key is still at
+    # hand; resizefs then has only the filesystem left to grow.
+    echo ", +" | sfdisk --no-reread -N "$partnum" "$disk" >/dev/null 2>&1 ||
+        echo ":: fydetab-crypt: the partition already fills the medium"
+    partx -u "$disk" >/dev/null 2>&1
+    # LUKS2 keeps the volume key in the kernel keyring, so this normally needs
+    # no key at all; --key-file is there for when that lookup comes up empty,
+    # and </dev/null keeps a missed lookup from stalling the boot on a prompt.
+    cryptsetup resize --key-file "$key" root </dev/null ||
+        echo ":: fydetab-crypt: could not grow the mapping"
+
+    # Overwrite before unlinking: FAT rewrites in place, so this lands on the
+    # clusters that held the passphrase.
+    dd if=/dev/urandom of="$key" bs=512 count=1 >/dev/null 2>&1
+    rm -f "$key"
+}
+
+fydetab_unlock() {
+    echo ""
+    echo "A passphrase is required to unlock this device:"
+    # cryptsetup re-prompts up to --tries times, three by default.
+    if cryptsetup open "$1" root; then
+        export root='/dev/mapper/root'
+        return 0
+    fi
+    err "fydetab-crypt: the disk stayed locked"
+    return 1
+}
+
+run_hook() {
+    local rootdev rootname disk partnum espdev espmnt esp_mounted key
+
+    # dm-crypt, xts and the arm64 AES drivers are built in; vfat and its
+    # character tables are modules.
+    modprobe -a -q dm-crypt vfat nls_cp437 nls_iso8859-1 >/dev/null 2>&1
+
+    rootdev=$(resolve_device "$root") || return 0
+    [ -b "$rootdev" ] || return 0
+    rootname=${rootdev##*/}
+    [ -f "/sys/class/block/$rootname/partition" ] || return 0
+    partnum=$(cat "/sys/class/block/$rootname/partition") || return 0
+    disk=$(fydetab_disk_of "$rootname") || return 0
+
+    espmnt=/fydetab-esp
+    esp_mounted=0
+    key=''
+
+    # The ESP is partition 2 of the same disk by construction -- boot.cmd
+    # hardcodes bootpart 2 and rootpart 3. Mounted read-only first: on every
+    # boot but the one conversion boot there is nothing on it to change.
+    if espdev=$(fydetab_part_dev "$disk" 2); then
+        mkdir -p "$espmnt"
+        if mount -t vfat -o ro "$espdev" "$espmnt" >/dev/null 2>&1; then
+            esp_mounted=1
+            if [ -f "$espmnt/fydetab-encrypt.key" ]; then
+                umount "$espmnt" >/dev/null 2>&1
+                esp_mounted=0
+                if mount -t vfat -o rw "$espdev" "$espmnt" >/dev/null 2>&1; then
+                    esp_mounted=1
+                    key="$espmnt/fydetab-encrypt.key"
+                else
+                    err "fydetab-crypt: the ESP is not writable, not converting"
+                fi
+            fi
+        fi
+    fi
+
+    if [ -n "$key" ]; then
+        fydetab_convert "$rootdev" "/dev/$disk" "$partnum" "$key"
+    elif cryptsetup isLuks "$rootdev" >/dev/null 2>&1; then
+        fydetab_unlock "$rootdev"
+    fi
+
+    if [ "$esp_mounted" -eq 1 ]; then
+        sync
+        umount "$espmnt" >/dev/null 2>&1
+    fi
+}
+
+# vim: set ft=sh ts=4 sw=4 et:

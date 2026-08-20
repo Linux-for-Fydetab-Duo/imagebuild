@@ -5,17 +5,23 @@
 
 # Root partition (e.g. /dev/mmcblk0p3), its kernel name, and the disk it is on.
 PART_DEV=$(findmnt / -o source -n | cut -f1 -d"[")
-PART_NAME=${PART_DEV#/dev/}
-DEV_NAME=$(echo /sys/block/*/"${PART_NAME}" | cut -d "/" -f 4)
-DEV="/dev/${DEV_NAME}"
-PART_NUM=$(cat "/sys/block/${DEV_NAME}/${PART_NAME}/partition")
 
-# Nothing left to claim on a medium that is already full, or on a second run.
-# sfdisk fails in that case, which must not fail the unit.
-echo ", +" | sfdisk --no-reread -N "$PART_NUM" "$DEV" \
-    || echo "partition already fills the medium"
+# On an encrypted install the root is a dm-crypt mapping: the fydetab-crypt
+# initramfs hook already grew the partition under it and resized the mapping
+# while it still held the passphrase, so only the filesystem is left to grow.
+if [[ $PART_DEV != /dev/mapper/* ]]; then
+    PART_NAME=${PART_DEV#/dev/}
+    DEV_NAME=$(echo /sys/block/*/"${PART_NAME}" | cut -d "/" -f 4)
+    DEV="/dev/${DEV_NAME}"
+    PART_NUM=$(cat "/sys/block/${DEV_NAME}/${PART_NAME}/partition")
 
-partx -u "$DEV"
+    # Nothing left to claim on a medium that is already full, or on a second
+    # run. sfdisk fails in that case, which must not fail the unit.
+    echo ", +" | sfdisk --no-reread -N "$PART_NUM" "$DEV" \
+        || echo "partition already fills the medium"
+
+    partx -u "$DEV"
+fi
 
 if [[ $(findmnt / -o fstype -n) = btrfs ]]; then
     btrfs filesystem resize max /

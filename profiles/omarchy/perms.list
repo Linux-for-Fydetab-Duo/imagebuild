@@ -41,6 +41,11 @@
 # CLI snapshot rollback, invoked by hand rather than by a unit.
 /usr/bin/fydetab-snapshot-restore       0    0    755
 
+# The first-boot encryption question. Its unit dies with 203/EXEC if this is not
+# executable. The mkinitcpio hook files it works with need no entry: mkinitcpio
+# sources them and stamps 755 into the cpio itself.
+/usr/bin/fydetab-encrypt-setup          0    0    755
+
 # First-boot provisioning state: `pending` arms the tty1 setup form, `groups`
 # lists what the owner account is granted. Modes match what upstream stages.
 # /var and /var/lib are listed for the same reason as /etc and /usr -- the

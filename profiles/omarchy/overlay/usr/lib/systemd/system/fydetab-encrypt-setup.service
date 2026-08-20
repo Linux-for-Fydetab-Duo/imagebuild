@@ -1,0 +1,26 @@
+[Unit]
+Description=Offer disk encryption after first-boot setup
+# Runs once, on the same tty1 and in the same window as omarchy-provision-owner
+# -- after the owner exists, before SDDM. Its own marker gates the repeat, not
+# the provisioning state, so a conversion started by hand later is offered the
+# same way.
+ConditionPathExists=!/var/lib/fydetab/encrypt-offered
+After=omarchy-provision-owner.service
+Before=display-manager.service getty@tty1.service
+Conflicts=getty@tty1.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=-/usr/bin/plymouth quit
+ExecStart=/usr/bin/fydetab-encrypt-setup
+StandardInput=tty
+StandardOutput=tty
+StandardError=tty
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+
+[Install]
+WantedBy=multi-user.target
