@@ -1,7 +1,9 @@
 # Storage stack plan: split /boot, btrfs + snapper, opt-in LUKS
 
-Status: Phases 0-2 implemented and device-verified 2026-08-20;
-Phases 3-4 agreed, not started. Covers GitHub issues
+Status: Phases 0-2 implemented and device-verified 2026-08-20.
+Phase 3 (opt-in LUKS) implemented and device-verified, then DEFERRED
+from the release 2026-08-20 — parked on branch `luks-encryption`, see
+the Phase 3 deferral note. Phase 4 pending. Covers GitHub issues
 #1 (Disk encryption) and #2 (snapshots / rollback / factory reset /
 hibernation). Supersedes the "recoverable subset" half of the
 filesystem feature gap entry in docs/omarchy-profile-plan.md (accepted
@@ -51,7 +53,10 @@ as-is 2026-08-18); the firmware-bound half stays out of scope here.
 
 ## What closes which issue
 
-- Issue #1 closes when opt-in LUKS2 ships (Phases 0, 2, 3).
+- Issue #1 stays OPEN this release: the opt-in LUKS2 implementation
+  is parked on branch `luks-encryption` (Phase 3 deferral note); the
+  issue gets a status comment pointing at the branch and the deferral
+  rationale instead of closing.
 - Issue #2 closes when pre-update snapshots + CLI rollback ship
   (Phases 0, 1), with boot-menu rollback / factory reset / hibernation
   explicitly split off as firmware/kernel-bound follow-ups.
@@ -253,6 +258,23 @@ TODO to in-plan:
   now that a real password login exists.
 
 ## Phase 3 — opt-in LUKS2 encryption → issue #1
+
+DEFERRED from the next release (decided 2026-08-20), after being
+fully implemented and device-verified on branch `luks-encryption`
+(single commit on top of the greeter fix): the first-boot flow was
+judged too complicated, and the conversion adds a reboot plus ~9
+measured minutes (64 GB SD). Note for re-entry: the conversion time
+is bound by the image-sized partition (~11 GiB — resizefs stands
+down until the question is answered), NOT the medium, so eMMC would
+be faster, not slower; the late-opt-in path is the medium-sized slow
+one. Known-good on the branch: decline path (verified end to end),
+accept path (conversion, key wipe, mapper boot — verified 2026-08-20).
+Open design work for re-entry: the one-secret flow (account password
+as the LUKS passphrase, verified against the shadow hash) is designed
+but unimplemented; a smoother delivery (e.g. conversion without the
+extra reboot, or build-time encryption with first-boot re-key, which
+the pipeline's no-loop design previously ruled out) needs a fresh
+look. The rest of this section describes the parked implementation.
 
 New unit `fydetab-encrypt-setup.service` (overlay), ordered
 After=omarchy-provision-owner.service, gated by its own run-once
