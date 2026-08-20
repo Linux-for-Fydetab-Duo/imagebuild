@@ -350,7 +350,11 @@ Phase 5 — CI + release
   re-read flaps the ESP device node and systemd drops a mounted
   /boot, leaving kernel updates writing to the empty mountpoint until
   a reboot). omarchy's unit got Before=boot.mount; apply the same
-  when arch-gnome is next touched.
+  when arch-gnome is next touched. The luks-encryption branch's
+  variant cannot take that fix as-is: it orders AFTER boot.mount
+  (RequiresMountsFor=/boot, to see the staged key), so its partx step
+  flaps a mounted /boot — needs its own resolution at re-entry (e.g.
+  remount /boot after the grow, or read the key without the mount).
 - Upstream aarch64 binaries watch (probed 2026-08-20):
   pkgs.omarchy.org/{stable,edge}/aarch64 404 and the legacy path
   holds a single keyring package; upstream's aarch64 plan is
