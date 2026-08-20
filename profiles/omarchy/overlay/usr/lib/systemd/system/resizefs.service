@@ -5,7 +5,10 @@ Description=Resize root filesystem
 # has only its chunk tails free -- nothing meaningful may write before then.
 DefaultDependencies=no
 After=systemd-remount-fs.service
-Before=basic.target shutdown.target
+# Before boot.mount as well: the script's partx re-read makes the ESP's
+# device node flap, and systemd drops an already-mounted /boot when that
+# happens -- the mount must come after the partition grow.
+Before=boot.mount basic.target shutdown.target
 Conflicts=shutdown.target
 
 [Service]

@@ -345,6 +345,12 @@ Phase 5 — CI + release
   with the radio off), and the RTC cannot wake the device from deep
   suspend (rtcwake alarm never fired). Tuning the dhd wake filter is
   BSP work if suspend-while-connected should stick.
+- arch-gnome resizefs shares the first-boot partx/boot.mount race
+  (found 2026-08-20 on the omarchy eMMC first boot: the partition
+  re-read flaps the ESP device node and systemd drops a mounted
+  /boot, leaving kernel updates writing to the empty mountpoint until
+  a reboot). omarchy's unit got Before=boot.mount; apply the same
+  when arch-gnome is next touched.
 - Upstream aarch64 binaries watch (probed 2026-08-20):
   pkgs.omarchy.org/{stable,edge}/aarch64 404 and the legacy path
   holds a single keyring package; upstream's aarch64 plan is
