@@ -257,7 +257,11 @@ Phase 5 — CI + release
 - Menu install-entry gaps (accepted as-is 2026-08-18): 16 buildable
   aarch64 packages and 13 permanently-x86 entries; the work list and
   per-package details live in docs/omarchy-pkgs-coverage.md.
-- Filesystem feature gap (accepted as-is 2026-08-18): upstream is
+- Filesystem feature gap (accepted as-is 2026-08-18; SUPERSEDED
+  2026-08-20 by docs/storage-stack-plan.md — btrfs+snapper+CLI
+  rollback shipped, opt-in LUKS implemented then parked on the
+  luks-encryption branch; the firmware-bound remainder below still
+  holds): upstream is
   Limine+btrfs+snapper+LUKS, we are U-Boot+ext4, which forfeits
   pre-update snapshots/rollback (omarchy-update degrades gracefully:
   omarchy-snapshot exits 127, update continues), Limine boot-menu
@@ -283,7 +287,9 @@ Phase 5 — CI + release
 
 - First-boot setup via upstream deferred provisioning (assessed
   2026-08-19, feasible; supersedes the earlier first-boot password
-  change TODO): official Omarchy's getting-started flow is
+  change TODO; IMPLEMENTED 2026-08-20 as storage-stack-plan.md
+  Phase 2 — this entry is the original assessment): official
+  Omarchy's getting-started flow is
   omarchy-provision-owner.service — armed by
   /var/lib/omarchy/provisioning/pending, it runs the gum setup form on
   tty1 before SDDM (keyboard layout, full name, username, password,
