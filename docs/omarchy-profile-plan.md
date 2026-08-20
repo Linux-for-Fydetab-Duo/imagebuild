@@ -284,6 +284,13 @@ Phase 5 — CI + release
   btrfs migration; bench-testable brick-free via maskrom/rkdeveloptool.
   Cheaper middle path if menu-less rollback suffices: btrfs + a script
   generating extlinux entries per snapshot on current U-Boot.
+  Updates 2026-08-20: the extlinux middle path is presumed dead — the
+  vendor blob's strings carry the distro-boot env but not the sysboot
+  command backing it; and an EDK2-rk3588 FydetabDuo platform port
+  already exists locally (~/workspace/edk2-rk3588, DSI panel wired,
+  never validated on the device) — the natural starting point. The
+  ESP layout shipped by storage-stack-plan.md Phase 0 means a
+  firmware switch needs no repartitioning.
 
 - First-boot setup via upstream deferred provisioning (assessed
   2026-08-19, feasible; supersedes the earlier first-boot password
@@ -308,3 +315,39 @@ Phase 5 — CI + release
   first-boot resizefs service. Constraint: the tty1 form needs a
   physical keyboard (no on-screen keyboard on a TTY), so the
   keyboard-dock requirement must be documented — or a fallback kept.
+
+- Consume upstream config wholesale (assessed 2026-08-20, omarchy-iso
+  research): run `omarchy apply system --defer-provisioning` inside
+  the build chroot in place of the hand-written
+  hooks/65-omarchy-config.sh blocks. Upstream's runtime repo has zero
+  x86_64/uname -m references, so this is the biggest parity win — it
+  deletes most of the drift surface docs/omarchy-feature-gaps.md
+  polices. Risk to probe: what the script does differently when run
+  emulated in a chroot instead of on the installed target.
+- @factory baseline at image assembly (assessed 2026-08-20): the
+  omarchy-iso installer ends every install with a read-only,
+  identity-scrubbed snapshot of @ (orchestrator/phases_impl.py). Our
+  layout now satisfies omarchy-system-factory-reset's subvol=/@
+  check, so creating @factory at stage 03 would make factory reset
+  reachable — audit first which reset-finish steps still assume
+  Limine or LUKS re-keying.
+- LUKS re-entry: parked on the `luks-encryption` branch, fully
+  device-verified. Rationale, measurements, and the re-entry design
+  notes (one-secret flow, themed unlock prompt) live in
+  docs/storage-stack-plan.md Phase 3.
+- Hibernation (unchanged from the 2026-08-18 assessment): needs
+  HIBERNATION=y (kernel rebuild; the FydeOS twin config ships it off
+  too), a non-zram swapfile, and resume arguments the fixed boot.scr
+  cannot carry per-machine — plus the RK3588 BSP suspend/resume risk.
+- Suspend wake policy (measured 2026-08-20): the dhd Wi-Fi driver
+  arms wake-on-WLAN, so any directed frame wakes deep suspend while
+  associated (woke in 2 s under live ssh traffic; slept indefinitely
+  with the radio off), and the RTC cannot wake the device from deep
+  suspend (rtcwake alarm never fired). Tuning the dhd wake filter is
+  BSP work if suspend-while-connected should stick.
+- Upstream aarch64 binaries watch (probed 2026-08-20):
+  pkgs.omarchy.org/{stable,edge}/aarch64 404 and the legacy path
+  holds a single keyring package; upstream's aarch64 plan is
+  unimplemented and excludes SBCs. If that repo ever goes live,
+  consuming upstream binaries (not the ISO) becomes attractive —
+  recheck occasionally.
