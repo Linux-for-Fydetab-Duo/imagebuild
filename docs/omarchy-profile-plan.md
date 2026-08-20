@@ -291,6 +291,22 @@ Phase 5 — CI + release
   never validated on the device) — the natural starting point. The
   ESP layout shipped by storage-stack-plan.md Phase 0 means a
   firmware switch needs no repartitioning.
+- Boot-from-snapshot rollback (assessed 2026-08-20; decision: the
+  full official experience — Limine's snapshot boot menu via
+  limine-snapper-sync — is to come from the UEFI route above, not
+  from U-Boot workarounds). Recorded for reference, the two
+  firmware-free interim options, unscheduled: (1) one-shot snapshot
+  boot via the ESP — boot.cmd loads + `env import`s an override file
+  carrying rootflags subvol=.../snapshot before composing bootargs;
+  written by a "try before restore" mode of fydetab-snapshot-restore,
+  deleted on successful boot so the next boot returns to @; (2) an
+  initramfs rescue picker on tty1 (volume keys via gpio-keys or a USB
+  keyboard; triggered by a held volume key or a failed-boot counter
+  file on the ESP that systemd clears on success) for the
+  update-broke-boot case. Both survive a later UEFI switch unused.
+  Caveat either way: kernel+initramfs live on the FAT ESP outside the
+  snapshots, so a rollback never rolls back the kernel — official
+  Omarchy keeps them inside btrfs where snapshots capture them.
 
 - First-boot setup via upstream deferred provisioning (assessed
   2026-08-19, feasible; supersedes the earlier first-boot password
