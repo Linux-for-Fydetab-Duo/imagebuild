@@ -1,6 +1,7 @@
 # Storage stack plan: split /boot, btrfs + snapper, opt-in LUKS
 
-Status: agreed 2026-08-20, not yet implemented. Covers GitHub issues
+Status: Phase 0 implemented and device-verified 2026-08-20; Phases
+1-4 agreed, not started. Covers GitHub issues
 #1 (Disk encryption) and #2 (snapshots / rollback / factory reset /
 hibernation). Supersedes the "recoverable subset" half of the
 filesystem feature gap entry in docs/omarchy-profile-plan.md (accepted
@@ -27,6 +28,10 @@ as-is 2026-08-18); the firmware-bound half stays out of scope here.
   the 2026-08-19 assessment in docs/omarchy-profile-plan.md:284-304.
   The encryption question is a separate small fydetab unit ordered
   after it, so the vendored omarchy package is not forked deeper.
+- Scope narrowed 2026-08-20: omarchy is the only profile this effort
+  builds and verifies. arch-gnome keeps the Phase 0 layout changes
+  (the boot layer stays identical across profiles) but is otherwise
+  out of scope from Phase 0 device verification onward.
 - /boot is a real ESP (FAT32, GPT type EF00), not ext4, so the future
   UEFI switch (EDK2-rk3588 or mainline U-Boot EFI_LOADER) needs no
   repartitioning — it only adds EFI binaries to an ESP that already
@@ -128,12 +133,17 @@ ESP is the UEFI future-proofing decided above.
 - Docs in the same change (documented invariant changes): CLAUDE.md
   "Boot chain" section (legacy_boot now on the BOOT partition; root is
   p3), docs/build-internals.md partition section, README.
-- Verify: both profiles build; flash; U-Boot discovers boot.scr on
+- Verify: build green with stage-04 passing (done 2026-08-20, both
+  profiles); flash the omarchy image; U-Boot discovers boot.scr on
   the FAT32/EF00 p2 (the key new check — if the vendor blob skips
   EF00-typed partitions, fall back to type 8300 with FAT content and
   flip the GUID at UEFI-switch time); device boots from SD and eMMC
-  images; kernel updates write to the vfat /boot; resizefs grows p3;
-  stage-04 green.
+  images; kernel updates write to the vfat /boot; resizefs grows p3.
+  Verified on device 2026-08-20 (SD boot): boot.scr found on the EF00
+  partition, vfat /boot mounted, resizefs grew p3 and self-disabled.
+  U-Boot also reads FAT markedly faster than its ext4 driver
+  (~40 MB of kernel+initramfs in ~3.2 s). Still open: an eMMC-flash
+  boot test, to ride along with Phase 1's device verification.
 
 ## Phase 1 — btrfs root + snapper (omarchy profile) → issue #2
 
@@ -266,6 +276,6 @@ recovery, which loses nothing since no user data exists yet).
 
 One phase at a time: implement → build → flash → verify on device →
 commit, before the next (kernel btrfs change additionally follows the
-CLAUDE.md kernel verify-before-push rule). Phases 0 and 1 land per
-profile behind image.conf so arch-gnome keeps shipping unchanged
-(split /boot yes, ext4 root kept).
+CLAUDE.md kernel verify-before-push rule). All phases build and
+verify the omarchy profile only; arch-gnome carries the shared Phase
+0 boot layout for parity but is otherwise out of scope.
