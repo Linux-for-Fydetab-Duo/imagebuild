@@ -24,6 +24,14 @@ PATH DEFAULT=/usr/local/sbin:/usr/local/bin:/usr/bin:@{HOME}/.local/share/mise/s
 EOF
 fi
 
+# install/login/sddm.sh: password-based SDDM logins must not create an
+# encrypted login keyring that conflicts with Omarchy's passwordless default
+# keyring.
+if [[ -f /etc/pam.d/sddm ]]; then
+  sed -i '/-auth.*pam_gnome_keyring\.so/d' /etc/pam.d/sddm
+  sed -i '/-password.*pam_gnome_keyring\.so/d' /etc/pam.d/sddm
+fi
+
 # install/hardware/set-wireless-regdom.sh: the world regdom restricts 5 GHz
 # channels and TX power; derive the country from the timezone as upstream
 # does, never overwriting an existing setting.
