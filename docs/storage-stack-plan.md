@@ -32,6 +32,11 @@ as-is 2026-08-18); the firmware-bound half stays out of scope here.
   builds and verifies. arch-gnome keeps the Phase 0 layout changes
   (the boot layer stays identical across profiles) but is otherwise
   out of scope from Phase 0 device verification onward.
+- The btrfs subvolume layout mirrors upstream Omarchy exactly
+  (2026-08-20): @/@home/@log top-level, root mounted subvol=/@,
+  .snapshots nested under @ — see "Target layout" for the measured
+  sources and the rollback consequence (an @-swap restore helper
+  instead of snapper rollback).
 - /boot is a real ESP (FAT32, GPT type EF00), not ext4, so the future
   UEFI switch (EDK2-rk3588 or mainline U-Boot EFI_LOADER) needs no
   repartitioning — it only adds EFI binaries to an ESP that already
@@ -85,18 +90,30 @@ p3  ROOT       omarchy: btrfs (LUKS2 underneath when opted in)
                arch-gnome: ext4 (unchanged behavior, new slot)
 ```
 
-btrfs subvolumes (top-level): `@` (default subvolume, mounted at /),
-`@home` (/home), `@snapshots` (/.snapshots). Root is mounted WITHOUT
-`subvol=` — the kernel mounts the default subvolume, which is what
-lets `snapper rollback` take effect by flipping it. `/.snapshots` as a
-separate top-level subvolume survives rollbacks.
+btrfs subvolumes mirror upstream Omarchy exactly (decided 2026-08-20;
+measured from upstream's own scripts): top-level `@` (/), `@home`
+(/home), `@log` (/var/log) — the set omarchy-system-factory-reset-
+finish:150-151 recreates — with snapper's `.snapshots` and, if
+hibernation ever lands, `swap` nested INSIDE `@` (snapper
+create-config and omarchy-hibernation-setup:57-62 semantics). Root is
+mounted with subvol=/@ exactly like upstream — omarchy-system-
+factory-reset:62 hard-checks that option, so matching it keeps the
+shipped-but-inert upstream tools usable later. Nested `.snapshots`
+needs no fstab entry. Rollback consequently does NOT use `snapper
+rollback` (that requires default-subvolume boot, which upstream does
+not use either): upstream restores by swapping `@` (limine-snapper-
+restore; omarchy-system-factory-reset-finish shows the same flow), so
+Phase 1 ships a small fydetab restore helper that mirrors it — clone
+the chosen snapshot to a new `@`, keep the old root as
+`@omarchy-old-<ts>`, carry `.snapshots` across — CLI-only, no boot
+menu on this firmware.
 
 fstab (omarchy): root by fs UUID (unchanged by later encryption — the
-fs keeps its UUID inside the mapper), plus /boot (vfat, UUID=<serial>,
-fmask=0077,dmask=0077 — FAT has no POSIX permissions, the umask is
-what keeps root-only files root-only), /home (subvol=@home),
-/.snapshots (subvol=@snapshots). No compression initially; revisit
-separately if wanted.
+fs keeps its UUID inside the mapper) with subvol=/@, plus /boot
+(vfat, UUID=<serial>, fmask=0077,dmask=0077 — FAT has no POSIX
+permissions, the umask is what keeps root-only files root-only),
+/home (subvol=/@home), /var/log (subvol=/@log). No /.snapshots entry
+(nested). No compression initially; revisit separately if wanted.
 
 Kernel cmdline: `root=PARTUUID=<p3>` stays even for encrypted
 installs — the initramfs hook probes the device and remaps to
@@ -152,10 +169,17 @@ ESP is the UEFI future-proofing decided above.
   built-in (not =m) so the root mount needs no module. Follow the
   kernel-change rule: local verify before any kernel-repo push.
 - stages/03-image.sh: for ROOT_FS=btrfs, restructure the staged tree
-  into @/, @home/, @snapshots/ and build with `mkfs.btrfs --rootdir
-  --subvol` (default:@, rw:@home, rw:@snapshots), `-U` for the
-  pre-written fstab, into a file dd'd at the p3 offset.
-- boot.cmd: rootfstype=btrfs (omarchy profile's copy).
+  into @/, @home/, @log/ (moving /home and /var/log content) and
+  build with `mkfs.btrfs --rootdir --subvol` (rw:@, rw:@home, rw:@log,
+  rw:@/.snapshots for snapper), `-U` for the pre-written fstab, into
+  a file dd'd at the p3 offset.
+- boot.cmd: rootfstype=btrfs and rootflags=subvol=/@ (omarchy
+  profile's copy).
+- Restore helper: a fydetab script mirroring upstream's @-swap flow
+  (limine-snapper-restore / omarchy-system-factory-reset-finish):
+  mount subvolid=5, clone the chosen read-only snapshot to a new @,
+  rename the running root to @omarchy-old-<ts>, move .snapshots
+  across, reboot. CLI-only rollback.
 - Snapper baked statically (no runtime create-config): overlay ships
   /etc/snapper/configs/root from upstream's template
   (omarchy checkout: default/snapper/root) and SNAPPER_CONFIGS="root";
@@ -166,11 +190,12 @@ ESP is the UEFI future-proofing decided above.
   (limine, limine-*-sync/hook stay dropped) + record in
   OMARCHY-VENDOR.md; add snapper to profiles/omarchy/packages.list.
 - Result: omarchy-snapshot works, omarchy-update takes pre-update
-  snapshots, rollback is `snapper rollback` + reboot (CLI-only; no
-  boot menu on this firmware).
+  snapshots, rollback is the fydetab restore helper + reboot
+  (CLI-only; no boot menu on this firmware).
 - Verify on device: snapshot created by omarchy-update; a real
-  rollback drill (mutate → rollback → reboot → state restored,
-  /.snapshots intact); resizefs btrfs branch grows the fs.
+  rollback drill via the helper (mutate → restore → reboot → state
+  restored, /.snapshots carried across); resizefs btrfs branch grows
+  the fs; eMMC-flash boot test (carried over from Phase 0).
 
 ## Phase 2 — first-boot provisioning (upstream adoption)
 
@@ -259,12 +284,12 @@ recovery, which loses nothing since no user data exists yet).
   check is type-independent; fatload/FAT32 driver and the generic
   `load` path are confirmed in the blob's strings). Fallback: type
   8300 now, GUID flip later.
-- `mkfs.btrfs --subvol` with the `default:` modifier exists in the x86
-  build container's btrfs-progs (needs ≥6.14-era progs; image ships
-  7.1, container version unchecked). Fallback: rootflags=subvol=@ plus
-  a custom rollback helper instead of default-subvol flipping.
-- `snapper rollback` semantics on the exact layout (default-subvol
-  flip, /.snapshots separate) — drill in Phase 1 before claiming it.
+- `mkfs.btrfs --rootdir --subvol` in the x86 build container's
+  btrfs-progs can create the nested @/.snapshots subvolume (fallback:
+  create it via a first-boot oneshot before snapper's first use).
+- The @-swap restore helper round-trips on the real device (drill in
+  Phase 1: restore, reboot, .snapshots intact) — modeled on upstream
+  but running without Limine's boot-a-snapshot step.
 - LUKS2 reencrypt crash-resume from our initramfs hook.
 - qemu-emulated mkinitcpio builds the custom hook + extra binaries
   within reasonable initramfs size (Mali firmware already rides in
