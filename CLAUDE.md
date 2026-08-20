@@ -87,3 +87,4 @@ enforces). Image builds are heavy (CI allots 350 min).
 - docs/omarchy-profile-plan.md — omarchy port plan, phase history, deferred TODOs
 - docs/omarchy-feature-gaps.md — parity audit vs the official Omarchy installer
 - docs/omarchy-pkgs-coverage.md — upstream omarchy-pkgs vs aarch64 availability
+- docs/storage-stack-plan.md — split /boot, btrfs+snapper, opt-in LUKS plan (issues #1/#2)
