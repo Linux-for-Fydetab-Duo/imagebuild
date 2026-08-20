@@ -1,7 +1,7 @@
 # Storage stack plan: split /boot, btrfs + snapper, opt-in LUKS
 
-Status: Phases 0 and 1 implemented and device-verified 2026-08-20;
-Phases 2-4 agreed, not started. Covers GitHub issues
+Status: Phases 0-2 implemented and device-verified 2026-08-20;
+Phases 3-4 agreed, not started. Covers GitHub issues
 #1 (Disk encryption) and #2 (snapshots / rollback / factory reset /
 hibernation). Supersedes the "recoverable subset" half of the
 filesystem feature gap entry in docs/omarchy-profile-plan.md (accepted
@@ -244,6 +244,13 @@ TODO to in-plan:
 - Verify on device: full first-boot flow creates the owner user with
   recorded groups, SDDM posture matches upstream (autologin only where
   upstream grants it), second boot does not re-run provisioning.
+  Verified 2026-08-20: owner at uid 1000 with the 16 recorded groups,
+  form answers applied (hostname/timezone/keymap), systemd-firstboot
+  had nothing left to prompt, autologin lasted exactly one boot and
+  the cleanup unit removed itself, greeter password login works,
+  provisioning inert from boot 2. pam_gnome_keyring auth/password
+  lines are stripped at build (port of upstream install/login/sddm.sh)
+  now that a real password login exists.
 
 ## Phase 3 — opt-in LUKS2 encryption → issue #1
 
