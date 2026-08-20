@@ -92,3 +92,4 @@ enforces). Image builds are heavy (CI allots 350 min).
 - docs/omarchy-feature-gaps.md — parity audit vs the official Omarchy installer
 - docs/omarchy-pkgs-coverage.md — upstream omarchy-pkgs vs aarch64 availability
 - docs/storage-stack-plan.md — split /boot, btrfs+snapper, opt-in LUKS plan (issues #1/#2)
+- docs/on-device-installer-plan.md — SD-boot installer design: default-on LUKS, @factory, PC-free eMMC install

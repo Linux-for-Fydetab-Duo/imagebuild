@@ -363,7 +363,11 @@ Phase 5 — CI + release
 - LUKS re-entry: parked on the `luks-encryption` branch, fully
   device-verified. Rationale, measurements, and the re-entry design
   notes (one-secret flow, themed unlock prompt) live in
-  docs/storage-stack-plan.md Phase 3.
+  docs/storage-stack-plan.md Phase 3. Route chosen 2026-08-20: the
+  on-device installer (docs/on-device-installer-plan.md) —
+  encrypt-at-creation supersedes the first-boot reencrypt flow; the
+  branch's fydetab-crypt hook gets reused, its conversion flow
+  retires.
 - Hibernation (unchanged from the 2026-08-18 assessment): needs
   HIBERNATION=y (kernel rebuild; the FydeOS twin config ships it off
   too), a non-zram swapfile, and resume arguments the fixed boot.scr
