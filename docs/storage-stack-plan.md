@@ -234,6 +234,13 @@ TODO to in-plan:
   bin/omarchy-provision-owner + install/provisioning/; gum is in the
   image; the tty1 form needs a physical keyboard — document the
   keyboard-dock requirement in the README.
+- Resolve the systemd-firstboot overlap (found 2026-08-20): the build
+  clears machine-id, so systemd's Initial Setup prompts on the
+  console for anything unset — today only the console keymap, since
+  the image ships no /etc/vconsole.conf. Once the provisioning form
+  owns keyboard/locale/timezone, ship a default /etc/vconsole.conf so
+  the console prompt disappears — mirroring upstream, where the
+  installer writes these configs before first boot.
 - Verify on device: full first-boot flow creates the owner user with
   recorded groups, SDDM posture matches upstream (autologin only where
   upstream grants it), second boot does not re-run provisioning.
