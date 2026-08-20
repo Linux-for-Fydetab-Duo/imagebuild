@@ -3,7 +3,7 @@
 pkgname=fydetabduo-post-install
 pkgver=20$(date +%y%m%d)
 pkgrel=7
-pkgdesc="Fixes for FydeTab Duo"
+pkgdesc="Fixes for Fydetab Duo"
 arch=('any')
 url="https://fydetabduo.com/"
 license=('GPL')

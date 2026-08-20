@@ -1,5 +1,5 @@
 [Unit]
-Description=FydeTab Duo extra modules
+Description=Fydetab Duo extra modules
 After=display-manager.service
 Before=bluetooth.service
 

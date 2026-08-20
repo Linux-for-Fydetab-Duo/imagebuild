@@ -1,6 +1,6 @@
 # arch-gnome profile
 
-The original Arch Linux ARM GNOME image for the FydeTab Duo: a stock GNOME
+The original Arch Linux ARM GNOME image for the Fydetab Duo: a stock GNOME
 (Wayland) desktop with the board support set — panthor GPU stack, AP6275P
 Wi-Fi/Bluetooth, touch, sensors and rotation, deep suspend/resume — released
 from `prod-*` tags (latest: `prod-v0.1.4`).
@@ -26,7 +26,7 @@ the `omarchy` infix, or from the workflow-dispatch `profile` dropdown.
 
 | Path | What it is |
 |---|---|
-| `packages.list` | ALARM base + GNOME + the FydeTab device set |
+| `packages.list` | ALARM base + GNOME + the Fydetab device set |
 | `hooks/` | build-time chroot configuration |
 | `overlay/` | files shipped verbatim: identity, GDM config, GNOME defaults |
 | `firmware/`, `boot/` | Rockchip boot chain blobs and boot script (see `firmware/PROVENANCE.md`) |

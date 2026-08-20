@@ -26,7 +26,7 @@ echo "==> compiling boot.cmd -> /boot/boot.scr (rockchip script dialect)"
 # table terminator; upstream mkimage's zero terminator makes it execute garbage.
 # See the header of mk-rk-script.py for the full story.
 python3 "$(dirname "${BASH_SOURCE[0]}")/mk-rk-script.py" \
-        "$PROFILE_DIR/boot/boot.cmd" "$ROOTFS/boot/boot.scr" "FydeTab Duo boot"
+        "$PROFILE_DIR/boot/boot.cmd" "$ROOTFS/boot/boot.scr" "Fydetab Duo boot"
 
 # /boot belongs to the ESP, so it is moved out of the tree the mkfs copies and
 # only the empty mountpoint stays behind. The trap puts it back on any exit:

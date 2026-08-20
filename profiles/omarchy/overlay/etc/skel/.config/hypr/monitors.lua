@@ -1,7 +1,7 @@
 -- See https://wiki.hypr.land/Configuring/Basics/Monitors/
 -- List current monitors and supported resolutions with: hyprctl monitors all
 
--- The FydeTab Duo panel is portrait-native (DSI-1, 1600x2560). Its DRM
+-- The Fydetab Duo panel is portrait-native (DSI-1, 1600x2560). Its DRM
 -- connector advertises panel orientation "Right Side Up" (property 219, value
 -- 3); mutter honours that property, Hyprland/aquamarine ignore it, so the
 -- rotation has to be applied here or the whole session appears rotated 90°

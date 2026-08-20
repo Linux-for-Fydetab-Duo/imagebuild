@@ -1,5 +1,5 @@
 [Unit]
-Description=FydeTab Duo Bluetooth fix
+Description=Fydetab Duo Bluetooth fix
 Requires=fydetabduo.service
 After=fydetabduo.service
 

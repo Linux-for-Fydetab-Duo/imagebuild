@@ -1,4 +1,4 @@
--- SDDM greeter compositor config for the FydeTab Duo: upstream's minimal
+-- SDDM greeter compositor config for the Fydetab Duo: upstream's minimal
 -- greeter config plus the rotation the user session gets from monitors.lua
 -- (the DSI-1 panel is portrait-native; Hyprland ignores the DRM panel
 -- orientation property, so without this the greeter renders 90 deg left).

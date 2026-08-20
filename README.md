@@ -1,6 +1,6 @@
-# FydeTab Duo image build
+# Fydetab Duo image build
 
-Builds Arch Linux ARM (aarch64) images for the FydeTab Duo (RK3588S),
+Builds Arch Linux ARM (aarch64) images for the Fydetab Duo (RK3588S),
 booting through u-boot, **from an x86_64 host**. Also maintains the `fyde`
 pacman repository the images install from.
 

@@ -1,9 +1,9 @@
 # Omarchy profile
 
-An [Omarchy](https://omarchy.org) 4.0.0 image for the FydeTab Duo: Hyprland
+An [Omarchy](https://omarchy.org) 4.0.0 image for the Fydetab Duo: Hyprland
 0.56 with the Quickshell-based Omarchy shell.
 First released as
-[Omarchy for FydeTab Duo v0.1.5](https://github.com/Linux-for-Fydetab-Duo/imagebuild/releases/tag/prod-omarchy-v0.1.5).
+[Omarchy for Fydetab Duo v0.1.5](https://github.com/Linux-for-Fydetab-Duo/imagebuild/releases/tag/prod-omarchy-v0.1.5).
 
 - Identity: none baked. `omarchy-provision-owner` asks for it on tty1 at
   first boot and creates the owner with the groups staged in
@@ -39,7 +39,7 @@ from the workflow-dispatch `profile` dropdown.
 
 | Path | What it is |
 |---|---|
-| `packages.list` | upstream's base manifest plus the FydeTab device set; header documents every substitution and drop |
+| `packages.list` | upstream's base manifest plus the Fydetab device set; header documents every substitution and drop |
 | `hooks/` | build-time chroot configuration: services, locale, Omarchy config ports, pacman snapshot |
 | `overlay/` | files shipped verbatim: provisioning state, sddm/ufw/pam config, Hyprland defaults |
 | `firmware/`, `boot/` | Rockchip boot chain blobs and boot script (see `firmware/PROVENANCE.md`) |

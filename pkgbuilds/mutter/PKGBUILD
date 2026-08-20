@@ -96,7 +96,7 @@ b2sums=('5a03f66f1717f78a1964f62549876890f38bb8c43c4d0f7da59f1621baa8a372202805e
 
 prepare() {
   cd mutter
-  # FydeTab Duo: revert upstream e3702100 so the panel keeps its rotation when
+  # Fydetab Duo: revert upstream e3702100 so the panel keeps its rotation when
   # orientation tracking goes unmanaged (otherwise the tablet snaps back to
   # portrait "normal" whenever the sensor is released). Verified to apply
   # against 50.4 (hunk offset only).

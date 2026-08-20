@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# FydeTab Duo image build -- single entry point.
+# Fydetab Duo image build -- single entry point.
 #
 #   ./build.sh containers            build/refresh the build containers
 #   ./build.sh sync                  mirror not-locally-built packages into ./repo
