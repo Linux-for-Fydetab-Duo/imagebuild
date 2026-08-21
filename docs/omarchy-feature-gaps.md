@@ -24,8 +24,8 @@ Status: recorded as deferred work; nothing here blocks the image.
 
 ## Tier 2 -- FIXED 2026-08-18 (v5 image; verified in built rootfs)
 
-Fixes: hooks/65-omarchy-config.sh (chromium theming files, pam_env PATH,
-regdom GB from the image timezone), packages.list (zram-generator --
+Fixes: hooks/65-omarchy-config.sh (chromium theming files, pam_env PATH),
+packages.list (zram-generator --
 kernel has ZRAM=m with the zstd backend, and module autoload works since
 the pkgrel-17 usermodehelper fix -- and tailscale), overlay (SSH
 keepalive drop-in, locale en_US.UTF-8, hostname omarchy, SDDM
@@ -34,8 +34,15 @@ RememberLastUser/Session). One sub-item deliberately skipped:
 blocked by the /etc/passwd overlay override (Tier 3 item 8) --
 omarchy-provision-owner writes it at first boot instead.
 
-3. Wireless regulatory domain never set (world/00): fewer 5 GHz channels,
-   lower TX power. Upstream derives it from timezone.
+3. Wireless regulatory domain: fydetab-wireless-regdom (overlay
+   script + boot service, Before=iwd, skipped while
+   provisioning/pending exists) derives the country from the timezone
+   each boot and runs wireless-regdb's set-wireless-regdom applier.
+   No regdom is baked into the image; the country first applies on
+   the boot after provisioning, and a later timezone change takes
+   effect on the next boot. A .path unit on /etc/localtime cannot see
+   timedatectl's symlink swap.
+   (install/hardware/set-wireless-regdom.sh)
    (install/hardware/set-wireless-regdom.sh)
 4. pam_env PATH (mise shims) missing -- `ssh device <cmd>` can't find
    mise-managed tools; more relevant for us than upstream since we ship

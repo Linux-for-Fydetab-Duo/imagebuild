@@ -1,0 +1,33 @@
+#!/bin/bash
+# Derive WIRELESS_REGDOM from the system timezone and apply it.
+#
+# The AP6275P firmware boots country-less (nvram ccode=0) and cannot
+# auto-detect its region; a wrong country makes it refuse channels the
+# user's AP may sit on (e.g. GB blocks 5 GHz ch 149-165). This mirrors
+# upstream omarchy's install/hardware/set-wireless-regdom.sh, run at every
+# boot instead of at image build; the unit skips first boot, where the
+# timezone is still the image's baked default rather than the user's.
+set -euo pipefail
+
+regdom_file=/etc/conf.d/wireless-regdom
+zone_tab=/usr/share/zoneinfo/zone.tab
+
+timezone=$(readlink -f /etc/localtime || true)
+timezone=${timezone#/usr/share/zoneinfo/}
+country="${timezone%%/*}"
+if [[ ! $country =~ ^[A-Z]{2}$ && -n $timezone && -f $zone_tab ]]; then
+    country=$(awk -v tz="$timezone" '$3 == tz {print $1; exit}' "$zone_tab")
+fi
+if [[ ! $country =~ ^[A-Z]{2}$ ]]; then
+    echo "no country for timezone '$timezone', leaving regdom unchanged" >&2
+    exit 0
+fi
+
+current=$(sed -n 's/^WIRELESS_REGDOM="\(.*\)"$/\1/p' "$regdom_file" 2>/dev/null | tail -1)
+if [ "$country" != "$current" ]; then
+    sed -i '/^WIRELESS_REGDOM=/d' "$regdom_file" 2>/dev/null || true
+    echo "WIRELESS_REGDOM=\"$country\"" >> "$regdom_file"
+fi
+# The dhd driver ignores a re-set of the current country, so this is safe
+# to run unconditionally; on a change it reprograms the firmware CLM.
+exec /usr/bin/set-wireless-regdom

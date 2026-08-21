@@ -1,0 +1,17 @@
+[Unit]
+Description=Derive Wi-Fi regulatory domain from the timezone
+# Before the Wi-Fi stack: the dhd driver tears down a live association
+# whenever the firmware country changes, so the country must be right
+# before iwd first associates.
+Before=iwd.service NetworkManager.service
+# Until provisioning has run, the timezone is the image's baked default,
+# not the user's -- deriving a country from it would restrict channels
+# wrongly. Skipped, the firmware stays on its permissive built-in default.
+ConditionPathExists=!/var/lib/omarchy/provisioning/pending
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/fydetab-wireless-regdom
+
+[Install]
+WantedBy=multi-user.target

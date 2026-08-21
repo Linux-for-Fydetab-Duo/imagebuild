@@ -90,6 +90,10 @@ enable_unit snapper-cleanup.timer
 # Board support (from fydetabduo-post-install)
 enable_unit fydetabduo.service
 enable_unit bluetooth-fydetab.service
+# Wi-Fi country from the device's timezone at boot; the firmware boots
+# country-less and a wrong country blocks the user's channels. A timezone
+# change (provisioning, travel) takes effect on the next boot.
+enable_unit fydetab-wireless-regdom.service
 # touchegg's daemon is enabled for parity with the GNOME profile and by the
 # package's own scriptlet; its gesture client is X11-only, so it does nothing
 # under Hyprland until the tablet-UX pass replaces it.

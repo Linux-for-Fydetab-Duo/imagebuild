@@ -32,21 +32,7 @@ if [[ -f /etc/pam.d/sddm ]]; then
   sed -i '/-password.*pam_gnome_keyring\.so/d' /etc/pam.d/sddm
 fi
 
-# install/hardware/set-wireless-regdom.sh: the world regdom restricts 5 GHz
-# channels and TX power; derive the country from the timezone as upstream
-# does, never overwriting an existing setting.
-regdom_file=/etc/conf.d/wireless-regdom
-if [ -f "$regdom_file" ] && ! grep -q '^WIRELESS_REGDOM=' "$regdom_file"; then
-    timezone=$(readlink -f /etc/localtime || true)
-    timezone=${timezone#/usr/share/zoneinfo/}
-    country="${timezone%%/*}"
-    zone_tab=/usr/share/zoneinfo/zone.tab
-    if [[ ! $country =~ ^[A-Z]{2}$ && -n $timezone && -f $zone_tab ]]; then
-        country=$(awk -v tz="$timezone" '$3 == tz {print $1; exit}' "$zone_tab")
-    fi
-    if [[ $country =~ ^[A-Z]{2}$ ]]; then
-        echo "WIRELESS_REGDOM=\"$country\"" >> "$regdom_file"
-    else
-        echo "hook 65-omarchy-config: no country for timezone '$timezone', regdom left unset" >&2
-    fi
-fi
+# Wireless regdom is NOT set at build time: the baked timezone is not the
+# user's, and a wrong country makes the firmware refuse channels the
+# user's AP may sit on. fydetab-wireless-regdom (overlay) derives it at
+# boot on provisioned systems, where the timezone is the user's own.
