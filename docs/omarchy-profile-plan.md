@@ -372,19 +372,21 @@ Phase 5 — CI + release
   HIBERNATION=y (kernel rebuild; the FydeOS twin config ships it off
   too), a non-zram swapfile, and resume arguments the fixed boot.scr
   cannot carry per-machine — plus the RK3588 BSP suspend/resume risk.
-- Suspend wake policy (measured 2026-08-20; QUEUED 2026-08-20: the
-  user finds the WLAN wake annoying — remove Wi-Fi from the wake
-  sources so suspend-while-connected sticks): the dhd driver arms
-  wake-on-WLAN, so any directed frame wakes deep suspend while
-  associated (woke in 2 s under live ssh traffic; slept indefinitely
-  with the radio off). Known-dead end: the config.txt magic-pattern
-  filter did not stop unicast wakes. Levers to try, cheapest first:
-  power/wakeup=disabled on the WLAN device via udev rule; if the wake
-  rides the PCIe intc instead (BL31 arms INTID 282 = fe190000.pcie),
-  a dhd module/wowl setting or BSP wake-filter work. Verify each with
-  the BL31 `IRQ_EN:` serial list and an associated-idle suspend soak.
-  Related fact: the RTC cannot wake the device from deep suspend
-  (rtcwake alarm never fired), so no alarm-based wakeups either way.
+- Suspend wake policy (RESOLVED 2026-08-21, device-verified through
+  boot + suspend-soak gates): Wi-Fi no longer wakes deep suspend.
+  iwd arms nl80211 WoWLAN triggers at startup and the dhd driver
+  programs firmware wowl from that state during suspend entry, so
+  the fix is an iwd.service drop-in (ExecStartPost `iw phy ...
+  wowlan disable`, fydetabduo-post-install 20260821-8). Approaches
+  that do NOT work, all device-tested: config.txt magic-pattern
+  filter (unicast still wakes), a systemd-sleep 'pre' hook (clearing
+  nl80211 state inside the suspend sequence is too late to reach the
+  firmware), and the PCI functions' power/wakeup (already disabled;
+  the wake rides the OOB GPIO irq 138 / fe190000.pcie path). Related
+  facts: the RTC cannot wake deep suspend, so a sleeping device
+  needs the power key; the phy advertises SAE support
+  ("Device supports SAE with AUTHENTICATE command" in iw phy info) —
+  relevant to the WPA3 question when it comes up.
 - arch-gnome resizefs shares the first-boot partx/boot.mount race
   (found 2026-08-20 on the omarchy eMMC first boot: the partition
   re-read flaps the ESP device node and systemd drops a mounted

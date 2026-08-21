@@ -2,12 +2,12 @@
 
 pkgname=fydetabduo-post-install
 pkgver=20$(date +%y%m%d)
-pkgrel=7
+pkgrel=8
 pkgdesc="Fixes for Fydetab Duo"
 arch=('any')
 url="https://fydetabduo.com/"
 license=('GPL')
-depends=('iwd' 'ap6275p-firmware' 'iio-sensor-proxy' 'touchegg' 'xorg-xinput' 'xorg-xrandr')
+depends=('iwd' 'iw' 'ap6275p-firmware' 'iio-sensor-proxy' 'touchegg' 'xorg-xinput' 'xorg-xrandr')
 optdepends=('gnome-shell-extension-gjs-osk: on-screen keyboard for the GNOME image')
 install=fydetab.install
 backup=('etc/sddm.conf.d/fydetab.conf')
@@ -25,7 +25,8 @@ source=('fydetabduo.service'
         'fydetab.rules'
         '90-fydetab.hwdb'
         '99-fydetab.conf'
-        'https://github.com/openFyde/overlay-fydetab_duo-openfyde/raw/r120-dev/chromeos-base/chromeos-bsp-fydetab_duo-openfyde/files/firmware/Himax_firmware.bin')
+        'https://github.com/openFyde/overlay-fydetab_duo-openfyde/raw/r120-dev/chromeos-base/chromeos-bsp-fydetab_duo-openfyde/files/firmware/Himax_firmware.bin'
+        '50-fydetab-wowlan-off.conf')
 sha256sums=('343e4c18af992ac8db223cf950df9108222ff8345be5b59d6ad45c7ad35ea096'
             '18f5dbc2275ebfbfac69332948c9775cacaea44d35fc1788eae457ce3cebcb19'
             'fe060a0f6de5b75326de1eec9f9ea322aa4a954c6e6b66cea0d224d6928f93eb'
@@ -40,7 +41,8 @@ sha256sums=('343e4c18af992ac8db223cf950df9108222ff8345be5b59d6ad45c7ad35ea096'
             '65f367929918a34c260c8b6a00c8fa64a2c2c346bef505985ce1048069445367'
             '36b5a7bcffc598d22136f920478e47592fbf6e8396ddb4eef4636652b4007e6b'
             '451602435c1ba5efbfa89711e2b177f663222a483c4ee43294d85f3cdc574e25'
-            'cf4a7fcd770d4c176128257a1a63360bc0b4da5bb85a46f61cff88aff9d02537')
+            'cf4a7fcd770d4c176128257a1a63360bc0b4da5bb85a46f61cff88aff9d02537'
+            '1e52c5240c595a664bfac1ca01f41aa72cc2debe60d55132fcf0c8b2bd520efa')
 
 package() {
     mkdir -p "${pkgdir}/etc/NetworkManager/conf.d"
@@ -51,6 +53,10 @@ package() {
     install -Dm644 "${srcdir}/fydetabduo.service" "${pkgdir}/usr/lib/systemd/system/fydetabduo.service"
     install -Dm644 "${srcdir}/50-suspend-state.conf" "${pkgdir}/usr/lib/systemd/sleep.conf.d/50-suspend-state.conf"
     install -Dm755 "${srcdir}/60-fydetab-wake-screen" "${pkgdir}/usr/lib/systemd/system-sleep/60-fydetab-wake-screen"
+    # WoWLAN off right after iwd arms it at startup: the dhd firmware's
+    # wake-on-WLAN wakes deep suspend on any directed frame, and clearing
+    # it inside the suspend sequence is too late to reach the firmware.
+    install -Dm644 "${srcdir}/50-fydetab-wowlan-off.conf" "${pkgdir}/usr/lib/systemd/system/iwd.service.d/50-fydetab-wowlan-off.conf"
     install -Dm755 "${srcdir}/fydetab-user-activity" "${pkgdir}/usr/bin/fydetab-user-activity"
     install -Dm755 "${srcdir}/brcm_patchram_plus" "${pkgdir}/usr/bin/brcm_patchram_plus"
     install -Dm755 "${srcdir}/bluetooth-fix" "${pkgdir}/usr/bin/bluetooth-fix"
