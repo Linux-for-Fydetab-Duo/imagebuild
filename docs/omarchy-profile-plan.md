@@ -345,14 +345,24 @@ Phase 5 — CI + release
   physical keyboard (no on-screen keyboard on a TTY), so the
   keyboard-dock requirement must be documented — or a fallback kept.
 
-- Consume upstream config wholesale (assessed 2026-08-20, omarchy-iso
-  research): run `omarchy apply system --defer-provisioning` inside
-  the build chroot in place of the hand-written
-  hooks/65-omarchy-config.sh blocks. Upstream's runtime repo has zero
-  x86_64/uname -m references, so this is the biggest parity win — it
-  deletes most of the drift surface docs/omarchy-feature-gaps.md
-  polices. Risk to probe: what the script does differently when run
-  emulated in a chroot instead of on the installed target.
+- Consume upstream config wholesale (assessed 2026-08-20; DROPPED
+  2026-08-21 after a full code probe of `omarchy apply system
+  --defer-provisioning` at the vendored commit): it cannot run in the
+  build chroot — config/firewall.sh aborts the whole apply (ufw over
+  qemu-user iptables-nft; failures propagate via set -e through
+  run_logged), 36 of 51 steps probe the BUILD HOST's hardware
+  (arch-chroot's fresh proc/sysfs expose the x86 runner to lspci/
+  cpuinfo/DMI), and post-install/pacman.sh unconditionally replaces
+  /etc/pacman.conf + mirrorlist with upstream's x86 versions. Only 15
+  steps are chroot-safe; reusing them needs a hand-maintained
+  OMARCHY_INSTALL allowlist tree, judged not worth its upkeep against
+  ~3 hook blocks saved. Facts worth keeping from the probe: upstream
+  config/snapper.sh does NOT deliver snapper-cleanup.timer on our
+  image (bundled enable with the absent limine-snapper-sync.service
+  fails and is swallowed) — 70-services.sh's explicit enable is
+  load-bearing; and upstream's faillock lockout policy
+  (config/increase-lockout-limit.sh) is a parity gap we could adopt
+  standalone some day.
 - @factory baseline at image assembly (assessed 2026-08-20): the
   omarchy-iso installer ends every install with a read-only,
   identity-scrubbed snapshot of @ (orchestrator/phases_impl.py). Our
