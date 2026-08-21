@@ -25,8 +25,11 @@ source=('fydetabduo.service'
         'fydetab.rules'
         '90-fydetab.hwdb'
         '99-fydetab.conf'
-        'https://github.com/openFyde/overlay-fydetab_duo-openfyde/raw/r120-dev/chromeos-base/chromeos-bsp-fydetab_duo-openfyde/files/firmware/Himax_firmware.bin'
+        'Himax_firmware.bin'
         '50-fydetab-wowlan-off.conf')
+# Himax_firmware.bin (touch controller fw) is vendored from openFyde's
+# overlay-fydetab_duo-openfyde chromeos-bsp files/firmware; content is
+# identical across their r120-dev..r150 branches (sha cf4a7fcd...).
 sha256sums=('343e4c18af992ac8db223cf950df9108222ff8345be5b59d6ad45c7ad35ea096'
             '18f5dbc2275ebfbfac69332948c9775cacaea44d35fc1788eae457ce3cebcb19'
             'fe060a0f6de5b75326de1eec9f9ea322aa4a954c6e6b66cea0d224d6928f93eb'
