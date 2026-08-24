@@ -14,4 +14,9 @@ hl.monitor({ output = "DSI-1", mode = "preferred", position = "auto", scale = 2,
 -- The himax digitizer reports coordinates in the panel's native portrait
 -- space; map it to the rotated output or every touch lands 90° off
 -- (mutter compensated for this automatically, Hyprland does not).
-hl.config({ input = { touchdevice = { output = "DSI-1", transform = 3 } } })
+-- The stylus (himax-stylus) is a separate device Hyprland classifies as a
+-- tablet, so it needs the same mapping under input.tablet.
+hl.config({ input = {
+  touchdevice = { output = "DSI-1", transform = 3 },
+  tablet = { output = "DSI-1", transform = 3 },
+} })

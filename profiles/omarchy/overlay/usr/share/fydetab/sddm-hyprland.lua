@@ -5,4 +5,7 @@
 dofile("/usr/share/sddm/hyprland.lua")
 
 hl.monitor({ output = "DSI-1", mode = "preferred", position = "auto", scale = 2, transform = 3 })
-hl.config({ input = { touchdevice = { output = "DSI-1", transform = 3 } } })
+hl.config({ input = {
+  touchdevice = { output = "DSI-1", transform = 3 },
+  tablet = { output = "DSI-1", transform = 3 },
+} })
