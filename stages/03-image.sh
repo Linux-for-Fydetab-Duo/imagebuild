@@ -17,6 +17,14 @@ IMG="$3"
 ROOTFS="$WORK/rootfs"
 source "$PROFILE_DIR/image.conf"
 
+# mke2fs -d and mkfs.btrfs --rootdir stamp this directory's own uid/gid/mode
+# onto the filesystem's root inode. Nothing guarantees root owns it (in CI it
+# belongs to the runner), and a non-root / makes systemd-tmpfiles refuse every
+# path on the system ("unsafe path transition"), silently killing tmpfiles
+# entries like /run/lock.
+chown 0:0 "$ROOTFS"
+chmod 755 "$ROOTFS"
+
 SECTOR=512
 root_offset=$((PART_ROOT_START * SECTOR))
 esp_mib=$(( (PART_ESP_END - PART_ESP_START + 1) * SECTOR / 1024 / 1024 ))

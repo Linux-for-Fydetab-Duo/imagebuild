@@ -85,6 +85,12 @@ populated in place with `mke2fs -E offset= -d`; btrfs has no offset option, so
 restructured into `@`/`@home`/`@log` and the file is `dd`'d to the partition
 offset. That is what makes it work inside a container and on a CI runner.
 
+Both populate paths stamp the staging directory's own uid/gid/mode onto the
+filesystem's root inode, so stage 3 chowns the tree top to `0:0` first — a
+non-root `/` makes systemd-tmpfiles refuse every path on the booted system
+("unsafe path transition"), which among other casualties leaves `/run/lock`
+uncreated and `alsactl store/restore` permanently broken.
+
 Stage 4's content checks follow the same split: `debugfs` reads the ext4 at its
 offset, while the btrfs side checks the superblock magic in the assembled image
 and reads files out of the filesystem file stage 3 keeps (`btrfs restore
