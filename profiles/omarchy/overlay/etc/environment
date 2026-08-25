@@ -3,3 +3,7 @@
 #
 # Syntax: simple "KEY=VAL" pairs on separate lines
 #
+
+# GTK4 dmabuf textures render black: Mesa panfrost cannot export panthor
+# exclusive-VM BOs (drmPrimeHandleToFD EINVAL). Remove when fixed in Mesa.
+GDK_DISABLE=dmabuf
