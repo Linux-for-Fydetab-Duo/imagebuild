@@ -131,6 +131,15 @@ jobs:
           Server = https://github.com/${{ github.repository }}/releases/download/repo" \
               --latest=false
           cd repo/fyde/aarch64
+          # Rolling-repo invariant: the db must reference exactly the pkg
+          # files being published. Refuse to publish a mismatched pair.
+          tar -xzf fyde.db.tar.gz --wildcards '*/desc' -O |
+            grep -A1 '%FILENAME%' | grep '\.pkg\.tar\.zst$' | sort > /tmp/pub-db
+          ls *.pkg.tar.zst | sort > /tmp/pub-dir
+          diff -u /tmp/pub-db /tmp/pub-dir || {
+            echo "fyde.db does not match the packages about to publish" >&2
+            exit 1
+          }
           # gh uploads symlink targets under the link's name, so fyde.db /
           # fyde.files arrive as the plain files pacman expects.
           # Not --clobber: it 404s on stale asset ids. Delete by name

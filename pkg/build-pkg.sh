@@ -222,7 +222,18 @@ repo_add_all() {
         done
         pkgs=(*.pkg.tar.zst)
         [ \${#pkgs[@]} -gt 0 ] || { echo 'no packages in repo'; exit 0; }
-        repo-add --quiet --new --remove '$DBNAME.db.tar.gz' \"\${pkgs[@]}\"
+        # Regenerate from scratch: an incremental --new --remove update
+        # inherits whatever state the seeded db carries; the dir (pruned
+        # above) is the single source of truth.
+        rm -f '$DBNAME'.db* '$DBNAME'.files*
+        repo-add --quiet '$DBNAME.db.tar.gz' \"\${pkgs[@]}\"
+        # Invariant check: every db entry has its file and every file its
+        # entry -- fail here, not later in pacstrap.
+        tar -xzf '$DBNAME.db.tar.gz' --wildcards '*/desc' -O |
+            grep -A1 '%FILENAME%' | grep '\.pkg\.tar\.zst\$' | sort > /tmp/db-files
+        printf '%s\n' \"\${pkgs[@]}\" | sort > /tmp/dir-files
+        diff -u /tmp/db-files /tmp/dir-files || {
+            echo '!! fyde.db does not match the package dir' >&2; exit 1; }
         # repo-add ran as root; hand its outputs to the host user so nothing
         # in the bind-mounted repo is owned by a foreign uid.
         chown -h \"\$HOST_UID:\$HOST_GID\" '$DBNAME'.db* '$DBNAME'.files*
