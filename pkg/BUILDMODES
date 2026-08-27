@@ -35,7 +35,7 @@ linux-fydetab                  skip
 grub                           skip
 grub-btrfs                     skip
 
-# --- Omarchy profile packages, vendored from omacom-io/omarchy-pkgs@045740e
+# --- Omarchy profile packages, vendored from omacom-io/omarchy-pkgs@5a73fd8
 # (see pkgbuilds/OMARCHY-VENDOR.md for provenance and local changes).
 # Configs, fonts, and prebuilt-aarch64 binary repacks: nothing compiles.
 omarchy                        noarch

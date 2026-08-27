@@ -12,10 +12,10 @@
 # core/extra/alarm/aur databases and repo/fyde/aarch64/fyde.db.
 #
 # Substituted for aarch64:
-#   mise           -> mise-bin       arm64 upstream tarball, built in [fyde]
-#   localsend      -> localsend-bin  same
-#   quickshell-git -> quickshell     ALARM ships the 0.3.0 release
+#   localsend      -> localsend-bin  arm64 upstream tarball, built in [fyde]
 #   nvim           -> neovim         nvim is only a provides= of neovim
+# (mise-bin and quickshell were substitutions until upstream v4.0.1
+# adopted both names itself.)
 #
 # Dropped from the upstream manifest (one word each = why):
 #   asdcontrol               unavailable
@@ -143,6 +143,7 @@ python-gobject
 python-poetry-core
 ttfx
 qrencode
+qt6-imageformats
 quickshell
 ripgrep
 ruby

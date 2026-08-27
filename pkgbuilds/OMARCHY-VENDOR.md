@@ -1,7 +1,8 @@
 # Omarchy package vendoring
 
 24 PKGBUILDs copied from https://github.com/omacom-io/omarchy-pkgs at
-commit 045740e (2026-08-17) for the omarchy profile (see
+commit 5a73fd8 (2026-08-26, Omarchy v4.0.1 sync) for the omarchy
+profile (see
 docs/omarchy-profile-plan.md). Upstream declares aarch64 in nearly all
 of them but publishes no aarch64 packages (pkgs.omarchy.org has no
 aarch64 tree), so they are built here into the [fyde] repo.
