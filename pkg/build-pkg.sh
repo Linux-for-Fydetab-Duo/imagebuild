@@ -197,6 +197,29 @@ repo_add_all() {
         "$IMG_X86" bash -c "
         set -euo pipefail
         shopt -s nullglob
+        # Drop superseded generations first: repo-add walks its argument
+        # list lexically, so an old file that sorts after its replacement
+        # (CalVer: 2026.8.6 > 2026.8.14) gets unlinked by --remove and then
+        # revisited as a missing argument, aborting the whole update.
+        declare -A newest
+        for f in *.pkg.tar.zst; do
+            base=\${f%-*}; ver=\${base##*-}; base=\${base%-*}
+            name=\${base%-*}; ver=\"\${base##*-}-\$ver\"
+            prev=\${newest[\$name]:-}
+            if [ -z \"\$prev\" ]; then
+                newest[\$name]=\$ver
+            elif [ \"\$(vercmp \"\$ver\" \"\$prev\")\" -gt 0 ]; then
+                newest[\$name]=\$ver
+            fi
+        done
+        for f in *.pkg.tar.zst; do
+            base=\${f%-*}; ver=\${base##*-}; base=\${base%-*}
+            name=\${base%-*}; ver=\"\${base##*-}-\$ver\"
+            if [ \"\$ver\" != \"\${newest[\$name]}\" ]; then
+                echo \"==> pruning superseded \$f\"
+                rm -f \"\$f\"
+            fi
+        done
         pkgs=(*.pkg.tar.zst)
         [ \${#pkgs[@]} -gt 0 ] || { echo 'no packages in repo'; exit 0; }
         repo-add --quiet --new --remove '$DBNAME.db.tar.gz' \"\${pkgs[@]}\"
